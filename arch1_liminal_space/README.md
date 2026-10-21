@@ -8,39 +8,43 @@ app_file: index.html
 pinned: false
 ---
 
-# Liminal-Space: Zero-Telemetry Local WebGPU Epistolary Sanctuary
+# Liminal-Space: Client-Side WebGPU Epistolary Sanctuary
 
-100% client-side, offline-capable reflection space. No text typed here is
-ever sent to a server — inference runs entirely in the browser via WebGPU
-(or WASM as a fallback) inside a Web Worker.
+Reflection space where inference runs in the browser (WebGPU, WASM fallback) inside a Web Worker.
+Text you type is never sent to a server. The page does fetch the transformers.js library from
+jsDelivr and the model weights from the Hugging Face CDN when you press "Load model"; that is
+code and weights only, never your text.
 
-Built for schizoid personality structure (SZPD) and nocturnal
-hikikomori-adjacent users for whom the act of disclosure itself — not what
-happens to the disclosed content — is the primary threat.
+Built for schizoid personality structure and nocturnal hikikomori-adjacent users for whom the
+act of disclosure is itself the primary threat.
+
+## Run locally
+
+Browsers block module workers on `file://`, so serve the folder:
+
+```bash
+python -m http.server 8000 --directory arch1_liminal_space
+# open http://localhost:8000
+```
 
 ## Deploy
 
-```bash
-hf repos create <your-username>/liminal-space \
-  --type space --space-sdk static --public --exist-ok
+From the repo root: `python scripts/deploy.py --hf-username YOU` (static Space, free).
 
-git clone https://huggingface.co/spaces/<your-username>/liminal-space
-cd liminal-space
-cp /path/to/this/directory/* .
-git add . && git commit -m "Deploy Liminal-Space" && git push
-```
+## Model
 
-## Before training a custom model
+`worker.js` defaults to `onnx-community/Qwen2.5-0.5B-Instruct`, which transformers.js 3.3.3
+supports. After running the training pipeline, deploy with `--onnx-repo YOU/nd-solitude-qwen-onnx`
+and `deploy.py` sets `CUSTOM_MODEL_ID` in `worker.js` for you.
 
-`worker.js` defaults to `HuggingFaceTB/SmolLM3-3B-ONNX`, a stock instruct
-model — this lets you deploy and test the UI immediately without waiting on
-`training/`. Once you have a DPO-aligned model exported via
-`training/export_onnx.py`, update `MODEL_ID` in `worker.js`.
+## Safety behavior
+
+`crisis.js` gates on the main thread before anything reaches the worker, and again inside the
+worker. Text matching explicit suicide/self-harm patterns shows a fixed list of support lines and
+is never passed to the model. It is a keyword screen, not a clinical assessment, and needs
+clinician review before public use. It mirrors `arch2_declarative_ally/safety.py`.
 
 ## Limitations
 
-- No crisis detection. See repo root `docs/ROADMAP.md` Phase 1.5.
-- Model quality is capped by what fits comfortably in browser memory
-  (realistically ≤3B parameters).
-- The `.replace(/\?/g, ".")` guardrail in `worker.js` is a syntax filter on
-  the streamed output, not a content safety check.
+- Model quality is capped by what fits in browser memory (0.5B default).
+- The `?` to `.` replacement is a syntax filter, not a content safety check.

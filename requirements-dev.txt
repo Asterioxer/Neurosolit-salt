@@ -1,19 +1,18 @@
-# For dataset/build_dpo_dataset.py and general Hub interaction
+# Dataset build + deploy + smoke tests (works on any laptop, no GPU)
 datasets>=2.20.0
-huggingface_hub[cli]>=0.25.0
+huggingface_hub>=0.33.5,<2
+gradio_client>=1.4.0
+pytest>=8.0
 
-# For training/train_dpo.py (needs a CUDA GPU -- run on Colab/Kaggle)
+# Training (needs a CUDA GPU -- use training/colab_pipeline.ipynb on free Colab/Kaggle)
 torch>=2.4.0
-transformers>=4.46.0
-trl>=0.11.0
+transformers>=4.46.0,<5
+trl>=0.12.0,<0.20
 peft>=0.13.0
 bitsandbytes>=0.44.0
 accelerate>=0.34.0
 
-# For training/export_onnx.py
-optimum[onnxruntime]>=1.22.0
+# ONNX export for arch1
+optimum[onnxruntime]>=1.22.0,<2
 onnx>=1.16.0
 onnxruntime>=1.19.0
-
-# For scripts/smoke_test.py
-gradio_client>=1.4.0

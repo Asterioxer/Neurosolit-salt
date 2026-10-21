@@ -1,22 +1,44 @@
-import spaces  # RULE 1: must be imported before torch or transformers
+try:
+    import spaces  # ZeroGPU rule 1: import before torch.
+except ImportError:
+    # No-op mock for local development and non-ZeroGPU environments
+    class _SpacesMock:
+        @staticmethod
+        def GPU(duration=60):
+            def decorator(fn):
+                return fn
+            return decorator
+    spaces = _SpacesMock()
 
+import os
 import re
 
 import gradio as gr
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# Stock instruct model by default -- swap for your DPO-aligned model
-# (training/train_dpo.py output) once you have one.
-MODEL_ID = "Qwen/Qwen2.5-3B-Instruct"
+from safety import CRISIS_MESSAGE, WATCH_NOTE, assess_risk
 
-# RULE 2: load eagerly at module scope and move to .to("cuda")
+# ---------------------------------------------------------------------------
+# Hardware-adaptive model loading.
+#   ZeroGPU / any CUDA box -> 3B model in fp16 on the GPU
+#   CPU-only (cpu-basic Space, a laptop) -> 1.5B model in fp32 on the CPU
+# Override with env var NEURO_MODEL_ID (e.g. your DPO-merged model from
+# training/train_dpo.py). deploy.py can set this for you with --merged-repo.
+# ---------------------------------------------------------------------------
+USE_CUDA = bool(os.getenv("SPACES_ZERO_GPU")) or torch.cuda.is_available()
+DEFAULT_MODEL = "Qwen/Qwen2.5-3B-Instruct" if USE_CUDA else "Qwen/Qwen2.5-1.5B-Instruct"
+MODEL_ID = os.getenv("NEURO_MODEL_ID") or DEFAULT_MODEL
+DEVICE = "cuda" if USE_CUDA else "cpu"
+
 tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL_ID,
-    torch_dtype=torch.float16,
-).to("cuda")
+if USE_CUDA:
+    # ZeroGPU rule 2: load at module scope, move to cuda eagerly.
+    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float16).to("cuda")
+else:
+    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float32)
 model.eval()
+print(f"[declarative-ally] model={MODEL_ID} device={DEVICE}")
 
 BERMED_SYSTEM_PROMPT = (
     "Act as a clinical specialist in Linda K. Murphy's BERMED Declarative Language Framework "
@@ -32,23 +54,17 @@ BERMED_SYSTEM_PROMPT = (
 
 def enforce_declarative_lock(text: str) -> str:
     """
-    Post-hoc syntactic guardrail: strips sentences ending in '?' and
-    neutralizes exclamation marks. NOT a hard guarantee -- if every
-    generated sentence happened to be a question, this falls back to the
-    unmodified text. See README.md Limitations.
+    Post-hoc syntactic guardrail: drops sentences ending in '?' and neutralizes
+    '!' / stray '?'. If every generated sentence was an interrogative, it falls back
+    to a calm neutral observation rather than converting questions into dotted sentences.
     """
     sentences = re.split(r"(?<=[.!?])\s+", text.strip())
-    safe_sentences = [s for s in sentences if not s.endswith("?")]
-    cleaned = " ".join(safe_sentences) if safe_sentences else text
+    safe = [s for s in sentences if not s.endswith("?")]
+    cleaned = " ".join(safe) if safe else "This space remains neutral and unhurried. No response is needed."
     return cleaned.replace("?", ".").replace("!", ".")
 
 
-# RULE 3: tight duration estimate on the GPU-decorated function
-@spaces.GPU(duration=15)
-def neutralize_demands(raw_demand_text: str, bandwidth_mode: str) -> str:
-    if not raw_demand_text.strip():
-        return "Environment is quiet. Zero demands active."
-
+def _generate(raw_demand_text: str, bandwidth_mode: str) -> str:
     max_new_tokens = 55 if bandwidth_mode == "Acute Overload (2 Sentences Max)" else 150
     messages = [
         {"role": "system", "content": BERMED_SYSTEM_PROMPT},
@@ -57,10 +73,8 @@ def neutralize_demands(raw_demand_text: str, bandwidth_mode: str) -> str:
             "content": f"Bandwidth State: {bandwidth_mode}\nIncoming High-Demand Text:\n{raw_demand_text}",
         },
     ]
-
     prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    inputs = tokenizer(prompt, return_tensors="pt").to("cuda")
-
+    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     with torch.no_grad():
         output_ids = model.generate(
             **inputs,
@@ -70,10 +84,29 @@ def neutralize_demands(raw_demand_text: str, bandwidth_mode: str) -> str:
             do_sample=True,
             pad_token_id=tokenizer.eos_token_id,
         )
-
     gen_tokens = output_ids[0][inputs.input_ids.shape[-1]:]
-    decoded = tokenizer.decode(gen_tokens, skip_special_tokens=True)
-    return enforce_declarative_lock(decoded)
+    return enforce_declarative_lock(tokenizer.decode(gen_tokens, skip_special_tokens=True))
+
+
+# ZeroGPU rule 3: tight duration on the GPU-decorated function (no-op elsewhere).
+@spaces.GPU(duration=20)
+def _generate_gpu(raw_demand_text: str, bandwidth_mode: str) -> str:
+    return _generate(raw_demand_text, bandwidth_mode)
+
+
+def neutralize_demands(raw_demand_text: str, bandwidth_mode: str) -> str:
+    if not raw_demand_text.strip():
+        return "Environment is quiet. Zero demands active."
+
+    # Hard crisis gate: runs before any model call, no generation involved.
+    risk = assess_risk(raw_demand_text)
+    if risk == "crisis":
+        return CRISIS_MESSAGE
+
+    out = _generate_gpu(raw_demand_text, bandwidth_mode) if USE_CUDA else _generate(raw_demand_text, bandwidth_mode)
+    if risk == "watch":
+        out = out + "\n\n" + WATCH_NOTE
+    return out
 
 
 def get_shutdown_card(card_type: str) -> str:
@@ -93,42 +126,77 @@ def get_shutdown_card(card_type: str) -> str:
             "Entering low-demand solitary decompression mode for the rest of the day. "
             "Messages and expectations are paused until bandwidth returns."
         ),
+        "Asynchronous / Workplace Low-Bandwidth Status": (
+            "Currently operating in asynchronous, low-bandwidth mode to manage cognitive overload. "
+            "Urgent direct calls or rapid replies are paused. Written notes will be processed "
+            "as energy permits, with zero expectation of immediate response."
+        ),
+        "Sensory / Auditory Overload Space Request": (
+            "Auditory processing is currently overwhelmed. Spoken requests cannot be parsed safely. "
+            "Please allow quiet physical space and reduce ambient noise. No reply is expected."
+        ),
     }
     return cards.get(card_type, "")
 
 
 with gr.Blocks(theme=gr.themes.Monochrome()) as demo:
-    gr.Markdown("# Declarative-Ally: ZeroGPU BERMED Demand De-Escalator & Shutdown Proxy")
+    gr.Markdown("# Declarative-Ally: BERMED Demand De-Escalator & Shutdown Proxy")
     gr.Markdown(
-        "_This is an unvalidated prototype, not a therapist replacement. "
-        "If you are in crisis, please reach out to a crisis line or someone you trust._"
+        "_Unvalidated prototype, not a therapist replacement. Text that sounds like thoughts of "
+        "ending life or self-harm is not rewritten; a fixed list of support lines is shown instead._"
     )
 
     with gr.Tab("BERMED Demand De-Escalator"):
         demand_in = gr.Textbox(
             label="Paste High-Demand Email, Instruction, or Internal Checklist",
             lines=4,
-            placeholder=(
-                "e.g., You need to finish this report by 5 PM and call the clinic "
-                "immediately! Why haven't you started?"
-            ),
+            placeholder="e.g., You need to finish this report by 5 PM and call the clinic immediately!",
         )
         bw_mode = gr.Radio(
             choices=["Standard Low-Demand", "Acute Overload (2 Sentences Max)"],
             value="Standard Low-Demand",
             label="Current Nervous System Bandwidth",
         )
-        convert_btn = gr.Button("Neutralize into BERMED Declarative Observation")
-        declarative_out = gr.Textbox(label="Zero-Demand Declarative Output", lines=4)
-        convert_btn.click(fn=neutralize_demands, inputs=[demand_in, bw_mode], outputs=declarative_out)
+        convert_btn = gr.Button("Neutralize into BERMED Declarative Observation", variant="primary")
+        declarative_out = gr.Textbox(label="Zero-Demand Declarative Output", lines=4, show_copy_button=True)
+        convert_btn.click(
+            fn=neutralize_demands,
+            inputs=[demand_in, bw_mode],
+            outputs=declarative_out,
+            api_name="neutralize_demands",
+        )
+
+        gr.Examples(
+            examples=[
+                [
+                    "You must attend the team social event tonight and tell everyone about your progress! Why are you always avoiding these meetings?",
+                    "Standard Low-Demand",
+                ],
+                [
+                    "You have to finish this report by 5 PM, submit your taxes, and call the clinic right away!",
+                    "Acute Overload (2 Sentences Max)",
+                ],
+                [
+                    "Can you please review this entire document immediately and send me all your feedback?",
+                    "Acute Overload (2 Sentences Max)",
+                ],
+            ],
+            inputs=[demand_in, bw_mode],
+            outputs=declarative_out,
+            fn=neutralize_demands,
+            cache_examples=False,
+        )
 
     with gr.Tab("Nonverbal Shutdown Proxy Cards"):
+        card_choices = [
+            "Request Sequential Departure (Need Solitude)",
+            "Autistic Inertia Freeze (Stay Put)",
+            "Post-Social Decompression",
+            "Asynchronous / Workplace Low-Bandwidth Status",
+            "Sensory / Auditory Overload Space Request",
+        ]
         card_selector = gr.Radio(
-            choices=[
-                "Request Sequential Departure (Need Solitude)",
-                "Autistic Inertia Freeze (Stay Put)",
-                "Post-Social Decompression",
-            ],
+            choices=card_choices,
             value="Request Sequential Departure (Need Solitude)",
             label="Select Zero-Typing Boundary Script",
         )
@@ -136,8 +204,9 @@ with gr.Blocks(theme=gr.themes.Monochrome()) as demo:
             label="Display or Copy Script",
             value=get_shutdown_card("Request Sequential Departure (Need Solitude)"),
             lines=3,
+            show_copy_button=True,
         )
-        card_selector.change(fn=get_shutdown_card, inputs=card_selector, outputs=card_out)
+        card_selector.change(fn=get_shutdown_card, inputs=card_selector, outputs=card_out, api_name=False)
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.queue().launch()

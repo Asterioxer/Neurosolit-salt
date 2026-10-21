@@ -1,60 +1,90 @@
+try:
+    import spaces  # ZeroGPU rule 1: import before torch.
+except ImportError:
+    # No-op mock for local development and non-ZeroGPU environments
+    class _SpacesMock:
+        @staticmethod
+        def GPU(duration=60):
+            def decorator(fn):
+                return fn
+            return decorator
+    spaces = _SpacesMock()
+
+import json
+import os
 import re
+from pathlib import Path
 
 import gradio as gr
 import numpy as np
-from huggingface_hub import hf_hub_download
-from llama_cpp import Llama
-from sentence_transformers import SentenceTransformer
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# Stock quantized model by default -- swap for your own GGUF export
-# (training/export_gguf.sh output) once you have one.
-GGUF_REPO = "bartowski/Qwen2.5-1.5B-Instruct-GGUF"
-GGUF_FILE = "Qwen2.5-1.5B-Instruct-Q4_K_M.gguf"
-model_path = hf_hub_download(repo_id=GGUF_REPO, filename=GGUF_FILE)
+from safety import CRISIS_MESSAGE, WATCH_NOTE, assess_risk
 
-llm = Llama(
-    model_path=model_path,
-    n_ctx=4096,
-    n_threads=2,
-    verbose=False,
-)
+HERE = Path(__file__).parent
 
-embedder = SentenceTransformer("BAAI/bge-small-en-v1.5")
+# ---------------------------------------------------------------------------
+# Hardware-adaptive loading (same pattern as arch2):
+#   ZeroGPU / CUDA -> fp16 on the GPU      CPU-only (laptop) -> fp32 on the CPU
+# Set NEURO_MODEL_ID to your own merged model (deploy.py does this with --merged-repo).
+# ---------------------------------------------------------------------------
+USE_CUDA = bool(os.getenv("SPACES_ZERO_GPU")) or torch.cuda.is_available()
+MODEL_ID = os.getenv("NEURO_MODEL_ID") or "Qwen/Qwen2.5-1.5B-Instruct"
+
+tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+if USE_CUDA:
+    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float16).to("cuda")
+else:
+    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float32)
+model.eval()
+print(f"[neuroact] model={MODEL_ID} cuda={USE_CUDA}")
+
+# ---------------------------------------------------------------------------
+# RAG over a small fixed knowledge base (knowledge_base.json), embedded on CPU.
+# Anything you add there needs the same clinician review as the rest.
+# ---------------------------------------------------------------------------
+CLINICAL_KNOWLEDGE_BASE = json.loads((HERE / "knowledge_base.json").read_text(encoding="utf-8"))
 BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 
-# Placeholder knowledge base -- six hardcoded strings. Replace with a real
-# retrieval corpus before treating this as a finished RAG system.
-CLINICAL_KNOWLEDGE_BASE = [
-    "Schizoid Compromise & Controlled Distance (Erskine / Fairbairn): Never push for rapid emotional intimacy. Relate around objective, intellectual, or creative solitary projects so the permeable ego boundary feels safe from engulfment.",
-    "Post-Disclosure Dissonance: When a solitary person shares personal information, they often experience immediate panic that the listener has gained power over them. Immediately validate stepping back and confirm zero expectations exist.",
-    "Autistic Shutdown & Inertia (Lammers / Raymaker): During shutdown, spoken words and motor initiation go offline. Never force movement or ask test questions. Allow stationary recovery in a low-sensory room.",
-    "BERMED Declarative Protocol (Murphy): Replace commands and questions with calm observations ('I notice...', 'I wonder...'). Always make room for the person's 'no' and extend wait time.",
-    "NeuroACT & Behavioural Activation (Pahnke / Attwood): Dismantle the shame of unmasking, use cognitive defusion to untangle harsh internal criticism, and anchor wellbeing in deep, focused solitary interests.",
-    "ACT-i Sleep & Sensory Pacing: Protect circadian recovery and sensory safety before cumulative demands stretch the internal stress band to its breaking point.",
-]
+try:
+    from sentence_transformers import SentenceTransformer
 
-doc_embeddings = embedder.encode(CLINICAL_KNOWLEDGE_BASE, normalize_embeddings=True)
+    embedder = SentenceTransformer("BAAI/bge-small-en-v1.5", device="cpu")
+    doc_embeddings = embedder.encode(CLINICAL_KNOWLEDGE_BASE, normalize_embeddings=True)
+except Exception as exc:  # noqa: BLE001 - app must still start without retrieval
+    print(f"[neuroact] embedder unavailable ({exc}); falling back to first entries.")
+    embedder = None
+    doc_embeddings = None
 
 
 def retrieve_clinical_guidance(query: str, top_k: int = 2) -> str:
-    q_emb = embedder.encode([BGE_QUERY_PREFIX + query], normalize_embeddings=True)[0]
-    scores = np.dot(doc_embeddings, q_emb)
-    top_indices = np.argsort(scores)[::-1][:top_k]
-    return "\n".join([f"- {CLINICAL_KNOWLEDGE_BASE[i]}" for i in top_indices])
+    if embedder is None:
+        idx = list(range(min(top_k, len(CLINICAL_KNOWLEDGE_BASE))))
+    else:
+        q_emb = embedder.encode([BGE_QUERY_PREFIX + query], normalize_embeddings=True)[0]
+        idx = np.argsort(np.dot(doc_embeddings, q_emb))[::-1][:top_k]
+    return "\n".join(f"- {CLINICAL_KNOWLEDGE_BASE[i]}" for i in idx)
 
 
-# NOTE: this pattern list is a starting point, not a validated crisis
-# screen. See README.md "The circuit breaker" and root docs/ROADMAP.md
-# Phase 1.5.
+# Engulfment / shutdown heuristics shape the system prompt. They are NOT the
+# crisis screen -- that is safety.assess_risk(), which runs first.
 ENGULFMENT_PATTERNS = [
     r"\bsaid too much\b", r"\bregret telling\b", r"\bfeel exposed\b",
     r"\bwant to disappear\b", r"\bghost\b", r"\bsuffocat\w*\b",
-    r"\btoo close\b", r"\bwords gone\b", r"\bcant move\b",
+    r"\btoo close\b", r"\bwords gone\b", r"\bcan'?t move\b",
 ]
+
+COMMON_GREETINGS = {
+    "hi", "hello", "hey", "hiya", "good morning", "good evening", "good afternoon",
+    "greetings", "yo", "sup", "howdy", "thanks", "thank you", "ok", "okay",
+}
 
 
 def check_circuit_breaker(text: str) -> str:
     lowered = text.lower().strip()
+    if lowered in COMMON_GREETINGS:
+        return "NOMINAL"
     if len(lowered) <= 8:
         return "SHUTDOWN_MINIMAL_BANDWIDTH"
     for pat in ENGULFMENT_PATTERNS:
@@ -63,7 +93,41 @@ def check_circuit_breaker(text: str) -> str:
     return "NOMINAL"
 
 
+def enforce_declarative_lock(text: str) -> str:
+    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    safe = [s for s in sentences if not s.endswith("?")]
+    cleaned = " ".join(safe) if safe else "This space remains quiet and unhurried. No reply is needed."
+    return cleaned.replace("?", ".").replace("!", ".")
+
+
+def _generate(messages, max_new_tokens: int) -> str:
+    prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    with torch.no_grad():
+        out = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            temperature=0.35,
+            top_p=0.9,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id,
+        )
+    text = tokenizer.decode(out[0][inputs.input_ids.shape[-1]:], skip_special_tokens=True)
+    return enforce_declarative_lock(text)
+
+
+# ZeroGPU rule 3: tight duration on the GPU function (no-op elsewhere).
+@spaces.GPU(duration=30)
+def _generate_gpu(messages, max_new_tokens: int) -> str:
+    return _generate(messages, max_new_tokens)
+
+
 def respond_companion(message, history, relational_mode, solitary_interest):
+    # 1. Hard crisis gate: no model call, fixed text.
+    risk = assess_risk(message)
+    if risk == "crisis":
+        return CRISIS_MESSAGE
+
     breaker_state = check_circuit_breaker(message)
     rag_context = retrieve_clinical_guidance(message)
 
@@ -95,32 +159,28 @@ def respond_companion(message, history, relational_mode, solitary_interest):
         )
 
     messages = [{"role": "system", "content": system_instructions}]
-    for user_turn, bot_turn in history[-4:]:
-        messages.append({"role": "user", "content": user_turn})
-        if bot_turn:
-            messages.append({"role": "assistant", "content": bot_turn})
+    # ChatInterface(type="messages") passes history as role/content dicts.
+    for turn in (history or [])[-6:]:
+        if isinstance(turn, dict) and turn.get("role") in ("user", "assistant") and turn.get("content"):
+            content = str(turn["content"])
+            # Clinical safeguard: do not feed past crisis turns or crisis notices into LLM context
+            if assess_risk(content) == "crisis" or ("14416" in content and "Tele-MANAS" in content):
+                continue
+            messages.append({"role": turn["role"], "content": content})
     messages.append({"role": "user", "content": message})
 
-    stream = llm.create_chat_completion(
-        messages=messages,
-        max_tokens=60 if breaker_state != "NOMINAL" else 145,
-        temperature=0.35,
-        top_p=0.9,
-        stream=True,
-    )
-
-    accumulated = ""
-    for chunk in stream:
-        delta = chunk["choices"][0]["delta"].get("content", "")
-        accumulated += delta
-        yield accumulated.replace("?", ".")
+    max_new_tokens = 60 if breaker_state != "NOMINAL" else 145
+    reply = _generate_gpu(messages, max_new_tokens) if USE_CUDA else _generate(messages, max_new_tokens)
+    if risk == "watch":
+        reply = reply + "\n\n" + WATCH_NOTE
+    return reply
 
 
 with gr.Blocks(theme=gr.themes.Soft()) as demo:
-    gr.Markdown("# NeuroACT-Solitude: Stateful CPU GGUF & Controlled-Distance RAG Companion")
+    gr.Markdown("# NeuroACT-Solitude: Controlled-Distance RAG Companion")
     gr.Markdown(
-        "_This is an unvalidated prototype, not a therapist replacement. "
-        "If you are in crisis, please reach out to a crisis line or someone you trust._"
+        "_Unvalidated prototype, not a therapist replacement. Writing that sounds like thoughts of "
+        "ending life or self-harm is not answered by the model; a fixed list of support lines is shown instead._"
     )
     with gr.Row():
         rel_mode = gr.Dropdown(
@@ -137,8 +197,18 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         )
     gr.ChatInterface(
         fn=respond_companion,
+        type="messages",
         additional_inputs=[rel_mode, interest_input],
+        examples=[
+            "Been in my room for three days working on my code. Society feels loud and impossible.",
+            "Someone invited me to an event and I don't know how to step back without feeling guilty.",
+            "Words gone. Too loud earlier. Everyone finally left the house.",
+        ],
+        api_name="chat",
     )
+    with gr.Accordion("Clinical Transparency: Underlying Principles (Knowledge Base)", open=False):
+        for item in CLINICAL_KNOWLEDGE_BASE:
+            gr.Markdown(f"- {item}")
 
 if __name__ == "__main__":
     demo.queue().launch()

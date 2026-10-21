@@ -47,13 +47,25 @@ def main() -> None:
     print(f"Quantized ONNX saved to {quant_dir}")
 
     if args.push:
+        import shutil
+
         from huggingface_hub import HfApi
+
+        # transformers.js expects weights under onnx/ and tokenizer/config at the root.
+        pub_dir = Path("./onnx_publish")
+        if pub_dir.exists():
+            shutil.rmtree(pub_dir)
+        shutil.copytree(quant_dir, pub_dir)
+        (pub_dir / "onnx").mkdir(exist_ok=True)
+        for f in list(pub_dir.glob("*.onnx")) + list(pub_dir.glob("*.onnx_data")):
+            shutil.move(str(f), str(pub_dir / "onnx" / f.name))
 
         api = HfApi()
         api.create_repo(repo_id=output_repo, repo_type="model", exist_ok=True)
-        api.upload_folder(folder_path=str(quant_dir), repo_id=output_repo, repo_type="model")
+        api.upload_folder(folder_path=str(pub_dir), repo_id=output_repo, repo_type="model")
         print(f"Pushed to https://huggingface.co/{output_repo}")
-        print(f"Point arch1_liminal_space/worker.js MODEL_ID at this repo.")
+        print(f"Deploy with: python scripts/deploy.py --hf-username {args.hf_username} --onnx-repo {output_repo}")
+        print("NOTE: custom exports load with dtype q8 (model_quantized.onnx); test in the browser before sharing.")
 
 
 if __name__ == "__main__":

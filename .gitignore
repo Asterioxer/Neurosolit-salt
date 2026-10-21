@@ -1,0 +1,34 @@
+# Checkpoints, local merged weights, and training artifacts
+nd_dpo_adapter*/
+nd_dpo_checkpoints*/
+nd_dpo_merged_local*/
+nd_sft_adapter*/
+nd_sft_checkpoints*/
+nd_sft_merged_local*/
+pipeline_out/
+pipeline_out_*/
+*.safetensors
+*.pt
+*.bin
+*.onnx
+*.onnx_data
+*.gguf
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# OS / Editor artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

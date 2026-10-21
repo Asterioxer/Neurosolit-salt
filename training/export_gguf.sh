@@ -5,11 +5,9 @@
 # Usage:
 #   ./export_gguf.sh <hf-username> <source-model-repo>
 #
-# Example:
-#   ./export_gguf.sh myuser myuser/nd-solitude-qwen-1.5b-merged
-#
-# Run this in a free Colab notebook or any machine with enough disk/RAM to
-# hold the fp16 model plus a quantized copy simultaneously.
+# Run on Linux (free Colab works). Needs git, cmake, and a logged-in HF token
+# (HF_TOKEN env var or `hf auth login`). Uses the Python API for Hub
+# operations so it does not depend on CLI subcommand names.
 
 set -euo pipefail
 
@@ -27,12 +25,15 @@ if [ ! -d "llama.cpp" ]; then
   git clone --depth 1 https://github.com/ggerganov/llama.cpp
 fi
 cd llama.cpp
-cmake -B build && cmake --build build --config Release -j 4
+cmake -B build && cmake --build build --config Release -j 4 --target llama-quantize
 pip install -r requirements.txt
 cd ..
 
 echo "2. Downloading merged model: ${SOURCE_MODEL}..."
-hf download "${SOURCE_MODEL}" --local-dir ./merged_model
+python - <<PY
+from huggingface_hub import snapshot_download
+snapshot_download("${SOURCE_MODEL}", local_dir="./merged_model")
+PY
 
 echo "3. Converting to FP16 GGUF..."
 python llama.cpp/convert_hf_to_gguf.py ./merged_model --outfile nd-solitude-f16.gguf --outtype f16
@@ -41,9 +42,11 @@ echo "4. Quantizing to Q4_K_M..."
 ./llama.cpp/build/bin/llama-quantize nd-solitude-f16.gguf nd-solitude-Q4_K_M.gguf Q4_K_M
 
 echo "5. Uploading to ${GGUF_REPO}..."
-hf repos create "${GGUF_REPO}" --type model --public --exist-ok
-hf upload "${GGUF_REPO}" ./nd-solitude-Q4_K_M.gguf nd-solitude-Q4_K_M.gguf
+python - <<PY
+from huggingface_hub import HfApi
+api = HfApi()
+api.create_repo("${GGUF_REPO}", repo_type="model", exist_ok=True)
+api.upload_file(path_or_fileobj="nd-solitude-Q4_K_M.gguf", path_in_repo="nd-solitude-Q4_K_M.gguf", repo_id="${GGUF_REPO}", repo_type="model")
+PY
 
-echo "Done. Point arch3_neuroact_solitude/app.py GGUF_REPO/GGUF_FILE at:"
-echo "  repo: ${GGUF_REPO}"
-echo "  file: nd-solitude-Q4_K_M.gguf"
+echo "Done. Deploy with:  python scripts/deploy.py --hf-username ${HF_USERNAME} --gguf-repo ${GGUF_REPO}"

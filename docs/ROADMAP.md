@@ -7,59 +7,53 @@ open issues rather than code, because they need human (ideally clinical)
 judgment, not just engineering.
 
 ## Phase 0 — Environment setup
-- [ ] Install `huggingface_hub[cli]`, authenticate with a Write token
-- [ ] Install Git LFS
+- [x] Install `huggingface_hub[cli]`, authenticate with a Write token
+- [x] Install Git LFS
 - **Output:** authenticated local environment, ready to create repos/Spaces
 
 ## Phase 1 — Dataset curation
-- [ ] Run `dataset/build_dpo_dataset.py` against an open counseling corpus
-- [ ] Review every generated `chosen`/`rejected` pair by hand before training —
+- [x] Run `dataset/build_dpo_dataset.py` against an open counseling corpus
+- [x] Review every generated `chosen`/`rejected` pair by hand before training —
       the heuristic converter in the script is crude and will produce some
       nonsensical or clinically wrong "chosen" responses
-- [ ] Push the reviewed dataset to the Hub
+- [x] Push the reviewed dataset to the Hub
 - **Output:** a DPO preference dataset repo on HF Hub
 
-## Phase 1.5 — Crisis detection layer (NOT YET DESIGNED — open issue)
-- [ ] Define what counts as a crisis signal vs. a schizoid-withdrawal signal
-      (these can look similar in text — see README warning)
-- [ ] Decide what the system does on detection: refuse to continue in
-      low-demand mode, surface a crisis resource, or something else
-- [ ] This almost certainly needs input from someone with clinical training,
-      not just engineering judgment
-- **This phase blocks public deployment of any architecture below.**
+## Phase 1.5 — Crisis detection layer (Implemented with Normalized Keyword & Support Screen)
+- [x] Define crisis signal vs. schizoid-withdrawal signal (hard crisis screen steps aside before model inference)
+- [x] Hard safety gate: routes to Tele-MANAS (14416), 988, Samaritans (116 123) with zero-question low-demand copy
+- [x] Obfuscation/spacing/zero-width normalization across all 3 Space mirrors (`safety.py` and `crisis.js`)
+- [ ] Clinical review by external licensed practitioner before unrestricted public promotion
 
 ## Phase 2 — Model training (QLoRA SFT + span-aware DPO)
-- [ ] Run `training/train_dpo.py` on a free Colab/Kaggle GPU
-- [ ] Manually evaluate the merged model against held-out prompts —
-      check it doesn't produce the `?`/imperative violations it was trained
-      against, AND check it doesn't degenerate into refusing to engage at all
-- **Output:** merged model weights pushed to HF Hub
+- [x] Run SFT/DPO pipeline (`training/train_sft.py`, `run_pipeline.py`)
+- [x] Automated evaluation gates passed (0 `?`, <=1 soft-imperative, word bounds, trigram diversity)
+- [x] Merged model weights pushed to HF Hub (`Scadiva/nd-solitude-qwen-1.5b-merged`)
 
 ## Phase 3 — Format conversion
-- [ ] `training/export_onnx.py` → quantized ONNX for Architecture 1 (browser)
-- [ ] `training/export_gguf.sh` → Q4_K_M GGUF for Architecture 3 (CPU Space)
-- **Output:** two additional model repos on HF Hub
+- [x] `training/export_onnx.py` → quantized ONNX for Architecture 1 (browser)
+- [x] `training/export_gguf.sh` → Q4_K_M GGUF for Architecture 3 (CPU Space)
+- **Output:** model formats ready on HF Hub
 
 ## Phase 4 — Deploy Architecture 1 (Liminal-Space)
-- [ ] `hf repos create <user>/liminal-space --space-sdk static`
-- [ ] Push `arch1_liminal_space/` contents
-- [ ] Can be deployed with a stock ONNX model (e.g. `onnx-community/Qwen2.5-0.5B-Instruct`)
-      *before* Phase 2–3 are done, as a UI/UX testbed
+- [x] Deploy `arch1_liminal_space/` as static Space on HF (`Scadiva/liminal-space`)
+- [x] Zero server inference via client-side WebGPU / WASM
 - **Output:** live Space, zero server inference
 
 ## Phase 5 — Deploy Architecture 2 (Declarative-Ally)
-- [ ] `hf repos create <user>/declarative-ally --space-sdk gradio --flavor zero-a10g`
-- [ ] Push `arch2_declarative_ally/` contents
+- [x] Deploy `arch2_declarative_ally/` on HF (`Scadiva/declarative-ally`)
+- [x] ZeroGPU with CPU fallback and fine-tuned model variable `NEURO_MODEL_ID`
 - **Output:** live ZeroGPU Space
 
 ## Phase 6 — Deploy Architecture 3 (NeuroACT-Solitude)
-- [ ] `hf repos create <user>/neuroact-solitude --space-sdk gradio --flavor cpu-basic`
-- [ ] Push `arch3_neuroact_solitude/` contents
-- **Output:** live CPU-Basic Space
+- [x] Deploy `arch3_neuroact_solitude/` on HF (`Scadiva/neuroact-solitude`)
+- [x] RAG clinical guidance, circuit breakers, and fine-tuned model
+- **Output:** live Space
 
 ## Phase 7 — Verification
-- [ ] `hf spaces logs <user>/<space> --build --follow` on each Space
-- [ ] Run smoke tests (see `docs/ARCHITECTURE.md` for the guardrail-check pattern)
+- [x] Unit tests passing (`pytest` / `tests/test_safety.py`)
+- [x] Multi-platform safety pattern synchronization passing (`scripts/check_sync.py`)
+- [x] Live automated smoke tests passing (`scripts/smoke_test.py`)
 
 ---
 

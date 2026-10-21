@@ -1,19 +1,36 @@
 import { pipeline, TextStreamer } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3";
+import { assessRisk, CRISIS_MESSAGE, WATCH_NOTE } from "./crisis.js";
 
-// Default: stock instruct model so the Space works before any custom
-// training is done. Swap for your own ONNX export (see training/export_onnx.py)
-// once you have one.
-const MODEL_ID = "HuggingFaceTB/SmolLM3-3B-ONNX"; // or "onnx-community/Qwen2.5-0.5B-Instruct" for a lighter load
+// Default: a small stock instruct model that transformers.js 3.3.3 supports,
+// so the Space works before any custom training. After running the pipeline
+// (training/export_onnx.py) set CUSTOM_MODEL_ID to your ONNX repo; deploy.py
+// can do this for you with --onnx-repo.
+const DEFAULT_MODEL_ID = "onnx-community/Qwen2.5-0.5B-Instruct";
+const CUSTOM_MODEL_ID = null; // e.g. "your-username/nd-solitude-qwen-onnx"
+const MODEL_ID = CUSTOM_MODEL_ID || DEFAULT_MODEL_ID;
 
 class LocalSanctuaryEngine {
   static generator = null;
+  static device = null;
+
+  static async pickDevice() {
+    try {
+      if (typeof navigator !== "undefined" && navigator.gpu) {
+        const adapter = await navigator.gpu.requestAdapter();
+        if (adapter) return "webgpu";
+      }
+    } catch (_) {
+      /* fall through to wasm */
+    }
+    return "wasm";
+  }
 
   static async getGenerator(onProgress) {
     if (!this.generator) {
-      const hasWebGPU = typeof navigator !== "undefined" && "gpu" in navigator;
+      this.device = await this.pickDevice();
       this.generator = await pipeline("text-generation", MODEL_ID, {
-        device: hasWebGPU ? "webgpu" : "wasm",
-        dtype: hasWebGPU ? "q4f16" : "q4",
+        device: this.device,
+        dtype: CUSTOM_MODEL_ID ? "q8" : this.device === "webgpu" ? "q4f16" : "q8",
         progress_callback: onProgress,
       });
     }
@@ -40,7 +57,7 @@ self.addEventListener("message", async (e) => {
       await LocalSanctuaryEngine.getGenerator((info) => {
         self.postMessage({ status: "progress", info });
       });
-      self.postMessage({ status: "ready" });
+      self.postMessage({ status: "ready", device: LocalSanctuaryEngine.device, model: MODEL_ID });
     } catch (err) {
       self.postMessage({ status: "error", message: err.message });
     }
@@ -48,8 +65,17 @@ self.addEventListener("message", async (e) => {
   }
 
   if (type === "REFLECT") {
+    // Second line of defense -- the page also gates before posting here.
+    const risk = assessRisk(text);
+    if (risk === "crisis") {
+      self.postMessage({ status: "crisis", text: CRISIS_MESSAGE });
+      return;
+    }
+
     try {
-      const gen = await LocalSanctuaryEngine.getGenerator();
+      const gen = await LocalSanctuaryEngine.getGenerator((info) => {
+        self.postMessage({ status: "progress", info });
+      });
       const messages = [
         { role: "system", content: PROMPTS[mode] || PROMPTS.analytical },
         { role: "user", content: text },
@@ -74,6 +100,9 @@ self.addEventListener("message", async (e) => {
         streamer,
       });
 
+      if (risk === "watch") {
+        self.postMessage({ status: "stream", text: buffer.replace(/\?/g, ".") + "\n\n" + WATCH_NOTE });
+      }
       self.postMessage({ status: "done" });
     } catch (err) {
       self.postMessage({ status: "error", message: err.message });

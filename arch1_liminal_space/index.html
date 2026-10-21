@@ -4,83 +4,107 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Liminal-Space — Client-Side Sanctuary</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { color-scheme: dark; --bg:#09090b; --panel:#18181b; --line:#27272a; --text:#e4e4e7; --mute:#71717a; --accent:#312e81; }
+    * { box-sizing: border-box; }
+    body { margin:0; padding:24px; background:var(--bg); color:var(--text); font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; display:flex; justify-content:center; min-height:100vh; }
+    main { width:100%; max-width:42rem; display:flex; flex-direction:column; gap:18px; }
+    header { border-bottom:1px solid var(--line); padding-bottom:14px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    h1 { font-size:1.15rem; margin:0; }
+    .sub { font-size:.75rem; color:#a1a1aa; margin:2px 0 0; }
+    .badge { font-size:.75rem; padding:4px 10px; border-radius:6px; background:var(--line); color:#d4d4d8; }
+    .note { font-size:.72rem; color:var(--mute); border:1px solid var(--line); border-radius:8px; padding:12px; background:#18181b66; }
+    .row { display:flex; flex-wrap:wrap; gap:8px; font-size:.78rem; }
+    select, button, textarea { font:inherit; color:var(--text); }
+    select, button { background:var(--panel); border:1px solid #3f3f46; border-radius:6px; padding:6px 12px; cursor:pointer; }
+    button:hover { filter:brightness(1.25); }
+    #preload-btn { background:#312e8199; border-color:#4338ca; }
+    #purge-btn { background:#450a0a99; border-color:#991b1b; margin-left:auto; }
+    #reflect-btn { background:#f4f4f5; color:#09090b; font-weight:600; border-color:#f4f4f5; }
+    textarea { width:100%; background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; resize:vertical; }
+    textarea:focus { outline:none; border-color:#52525b; }
+    section { background:#18181b99; border:1px solid var(--line); border-radius:8px; padding:16px; min-height:120px; }
+    .label { font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--mute); margin-bottom:8px; }
+    #mirror-output { margin:0; white-space:pre-wrap; color:#d4d4d8; font-size:.9rem; }
+    #mirror-output.crisis { color:#fde68a; }
+  </style>
 </head>
-<body class="bg-zinc-950 text-zinc-200 min-h-screen p-6 font-sans flex justify-center">
-  <main class="w-full max-w-2xl flex flex-col gap-5">
-    <header class="border-b border-zinc-800 pb-4 flex justify-between items-center">
+<body>
+  <main>
+    <header>
       <div>
-        <h1 class="text-xl font-semibold text-zinc-100">Liminal-Space: Epistolary Vault</h1>
-        <p class="text-xs text-zinc-400">100% Client-Side WebGPU Execution • Zero Network Telemetry</p>
+        <h1>Liminal-Space: Epistolary Vault</h1>
+        <p class="sub">Your text is processed on this device only • never sent to a server</p>
       </div>
-      <span id="status-badge" class="text-xs px-2.5 py-1 rounded bg-zinc-800 text-zinc-300">
-        Model Idle (Passive Vault)
-      </span>
+      <span id="status-badge" class="badge">Model idle</span>
     </header>
 
-    <p class="text-[11px] text-zinc-500 leading-relaxed border border-zinc-800 rounded-lg p-3 bg-zinc-900/40">
-      This is an unvalidated prototype, not a therapist replacement. If you are in crisis,
-      please reach out to a crisis line or someone you trust — this tool is not built to
-      recognize or respond to that.
+    <p class="note">
+      Unvalidated prototype, not a therapist replacement. Writing that sounds like thoughts of
+      ending life or self-harm is not answered by the model; a fixed list of support lines is shown
+      instead. Library code and model weights are downloaded from public CDNs when the model is
+      loaded; what you type is not.
     </p>
 
-    <div class="flex flex-wrap gap-2 text-xs">
-      <select id="mode-select" class="bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-zinc-200">
-        <option value="analytical">Mode: Objective Analytical Mirror (Schizoid-Safe)</option>
+    <div class="row">
+      <select id="mode-select" aria-label="Mode">
+        <option value="analytical">Mode: Objective Analytical Mirror</option>
         <option value="declarative">Mode: Low-Demand Declarative Observation</option>
       </select>
-      <button id="preload-btn" class="bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700 px-3 py-1.5 rounded">
-        Cache Model Locally (Allow Offline)
-      </button>
-      <button id="purge-btn" class="bg-red-950/60 hover:bg-red-900 border border-red-800 px-3 py-1.5 rounded ml-auto">
-        Instant Ephemeral Purge (Clear All State)
-      </button>
+      <button id="preload-btn">Load / cache model locally</button>
+      <button id="purge-btn">Instant purge (clear everything)</button>
     </div>
 
-    <textarea
-      id="letter-box"
-      rows="7"
-      placeholder="Write in complete privacy. Nothing typed here is ever sent to a server. Leave it unsent, or click 'Request Objective Mirror' below..."
-      class="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-100 focus:outline-none focus:border-zinc-600"
-    ></textarea>
+    <textarea id="letter-box" rows="7" placeholder="Write in privacy. Leave it unsent, or use the button below."></textarea>
 
-    <div class="flex gap-3">
-      <button id="reflect-btn" class="bg-zinc-100 text-zinc-950 font-medium text-xs px-4 py-2 rounded hover:bg-zinc-300">
-        Request Objective Mirror (Local GPU)
-      </button>
+    <div class="row">
+      <button id="reflect-btn">Request objective mirror (local)</button>
+      <button id="sample-btn" style="background:#27272a; border-color:#3f3f46; font-size:.75rem;">Insert sample reflection</button>
     </div>
 
-    <section class="bg-zinc-900/60 border border-zinc-800 rounded-lg p-4 min-h-[120px]">
-      <div class="text-[11px] uppercase tracking-wider text-zinc-500 mb-2">Local Mirror Output</div>
-      <p id="mirror-output" class="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
-        Silence is active. No observation requested.
-      </p>
+    <section>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div class="label" style="margin-bottom:0;">Local mirror output</div>
+        <button id="copy-btn" style="font-size:.7rem; padding:2px 8px; background:#27272a; border:1px solid #3f3f46; border-radius:4px; cursor:pointer;">Copy</button>
+      </div>
+      <p id="mirror-output">Silence is active. No observation requested.</p>
     </section>
   </main>
 
   <script type="module">
+    import { assessRisk, CRISIS_MESSAGE } from "./crisis.js";
+
     let worker = new Worker("./worker.js", { type: "module" });
     const statusBadge = document.getElementById("status-badge");
     const letterBox = document.getElementById("letter-box");
     const mirrorOutput = document.getElementById("mirror-output");
     const modeSelect = document.getElementById("mode-select");
 
+    function show(text, isCrisis = false) {
+      mirrorOutput.textContent = text;
+      mirrorOutput.classList.toggle("crisis", isCrisis);
+    }
+
     function bindWorkerEvents(w) {
       w.addEventListener("message", (e) => {
-        const { status, text, info, message } = e.data;
+        const { status, text, info, message, device } = e.data;
         if (status === "progress") {
           const pct = info && info.progress ? Math.round(info.progress) : "";
           statusBadge.textContent = `Caching local weights... ${pct}%`;
         } else if (status === "ready") {
-          statusBadge.textContent = "Ready (Offline Safe)";
+          statusBadge.textContent = `Ready (${device})`;
         } else if (status === "stream") {
-          mirrorOutput.textContent = text;
+          show(text);
+        } else if (status === "crisis") {
+          show(text, true);
+          statusBadge.textContent = "Support information shown";
         } else if (status === "done") {
-          statusBadge.textContent = "Complete (Local Vault)";
+          statusBadge.textContent = "Complete (local)";
         } else if (status === "error") {
           statusBadge.textContent = `Error: ${message}`;
         }
       });
+      w.addEventListener("error", () => { statusBadge.textContent = "Worker failed to start"; });
     }
     bindWorkerEvents(worker);
 
@@ -90,20 +114,40 @@
     });
 
     document.getElementById("reflect-btn").addEventListener("click", () => {
-      if (!letterBox.value.trim()) return;
+      const text = letterBox.value;
+      if (!text.trim()) return;
+      // Hard gate on the main thread: crisis text never reaches the model.
+      if (assessRisk(text) === "crisis") {
+        show(CRISIS_MESSAGE, true);
+        statusBadge.textContent = "Support information shown";
+        return;
+      }
+      show("");
       statusBadge.textContent = "Reflecting locally...";
-      worker.postMessage({
-        type: "REFLECT",
-        text: letterBox.value,
-        mode: modeSelect.value,
-      });
+      worker.postMessage({ type: "REFLECT", text, mode: modeSelect.value });
+    });
+
+    document.getElementById("sample-btn").addEventListener("click", () => {
+      letterBox.value = "Three in the morning. House is finally silent. Deep in solitary systems research for hours. The outside world carried too much sensory friction today.";
+    });
+
+    const copyBtn = document.getElementById("copy-btn");
+    copyBtn.addEventListener("click", async () => {
+      const text = mirrorOutput.textContent;
+      if (!text || text === "Silence is active. No observation requested.") return;
+      try {
+        await navigator.clipboard.writeText(text);
+        const prev = copyBtn.textContent;
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => { copyBtn.textContent = prev; }, 1500);
+      } catch (_) {}
     });
 
     document.getElementById("purge-btn").addEventListener("click", () => {
       worker.terminate();
       letterBox.value = "";
-      mirrorOutput.textContent = "State purged. Memory buffer reset to zero.";
-      statusBadge.textContent = "Purged (Passive Vault)";
+      show("State purged. Memory buffer reset.");
+      statusBadge.textContent = "Purged";
       worker = new Worker("./worker.js", { type: "module" });
       bindWorkerEvents(worker);
     });

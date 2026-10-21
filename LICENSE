@@ -1,0 +1,37 @@
+MIT License
+
+Copyright (c) 2026 Neurosolit Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+NON-CLINICAL RESEARCH PROTOTYPE NOTICE:
+This software and associated model weights are experimental research prototypes
+designed for low-demand communication exploration. They are not medical devices,
+not validated therapeutic interventions, and not a replacement for clinical care.
+Anyone experiencing thoughts of self-harm or acute distress should contact local
+emergency services or verified crisis lifelines (e.g., Tele-MANAS 14416 in India,
+988 in the US, Samaritans 116 123 in the UK, or findahelpline.com).
+
+THIRD-PARTY DATASET LICENSING:
+Portions of the training data curation pipeline optionally reference open
+counseling datasets including `Amod/mental_health_counseling_conversations`,
+which is governed by the RAIL-D (Responsible AI License - Dataset). Commercial
+use or redistribution must comply with the specific terms of the respective source licenses.
