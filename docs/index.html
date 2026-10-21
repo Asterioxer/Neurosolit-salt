@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neurosolit — Low-Demand Solitude-Affirming Sanctuary</title>
+  <meta name="description" content="Low-demand, solitude-affirming conversational tools for neurodivergent people (schizoid structure, PDA autism, burnout, withdrawal)." />
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #18181b;
+      --card: #1f1f23;
+      --border: #27272a;
+      --border-focus: #52525b;
+      --text: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
+      --accent: #4338ca;
+      --accent-hover: #4f46e5;
+      --accent-subtle: rgba(67, 56, 202, 0.18);
+      --danger: #991b1b;
+      --danger-hover: #b91c1c;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --font-scale: 1rem;
+    }
+
+    body.dimmed {
+      --bg: #030304;
+      --panel: #0d0d10;
+      --card: #131317;
+      --border: #1e1e24;
+      --text: #d4d4d8;
+      --text-muted: #858591;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: var(--font-scale);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    header, main, footer {
+      width: 100%;
+      max-width: 920px;
+    }
+
+    /* Header & Branding */
+    header {
+      padding: 16px 0 24px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .brand-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .brand-sub {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill-btn {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      padding: 5px 12px;
+      border-radius: 9999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .pill-btn:hover {
+      color: var(--text);
+      border-color: var(--border-focus);
+    }
+
+    .pill-btn.active {
+      background: var(--accent-subtle);
+      border-color: var(--accent);
+      color: #c7d2fe;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      display: inline-block;
+    }
+
+    /* Disclaimer alert */
+    .prototype-banner {
+      background: rgba(24, 24, 27, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    /* Crisis Modal Overlay */
+    .crisis-banner {
+      display: none;
+      background: #1c1917;
+      border: 1px solid #78350f;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 24px;
+      color: #fde68a;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .crisis-banner h3 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+      color: #fef08a;
+    }
+
+    .crisis-banner ul {
+      margin: 12px 0;
+      padding-left: 20px;
+      font-size: 0.88rem;
+      color: #fef9c3;
+    }
+
+    .crisis-banner p {
+      font-size: 0.84rem;
+      color: #e5e7eb;
+    }
+
+    /* Tabs Navigation */
+    .tab-bar {
+      display: flex;
+      gap: 6px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      margin-bottom: 22px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+      background: var(--panel);
+    }
+
+    .tab-btn.active {
+      color: #fff;
+      background: var(--panel);
+      border-color: var(--border);
+    }
+
+    /* Tab Content Panes */
+    .tab-pane {
+      display: none;
+      animation: fadeIn 0.15s ease;
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(2px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Form & Card styling */
+    .panel-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .panel-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .panel-desc {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    textarea, input[type="text"], select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.92rem;
+      color: var(--text);
+      font-family: inherit;
+      resize: vertical;
+      transition: border-color 0.15s ease;
+    }
+
+    textarea:focus, input[type="text"]:focus, select:focus {
+      outline: none;
+      border-color: var(--border-focus);
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 14px 0;
+      align-items: center;
+    }
+
+    .btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.86rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      filter: brightness(1.2);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent-hover);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-danger {
+      background: rgba(153, 27, 27, 0.4);
+      border-color: var(--danger);
+      color: #fca5a5;
+    }
+
+    .btn-small {
+      padding: 4px 10px;
+      font-size: 0.76rem;
+    }
+
+    .sample-pill {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+
+    .sample-pill:hover {
+      color: var(--text);
+      border-color: var(--border-focus);
+    }
+
+    .output-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 100px;
+      font-size: 0.92rem;
+      white-space: pre-wrap;
+      color: #e4e4e7;
+      position: relative;
+    }
+
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+    }
+
+    /* Chat bubble log */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 420px;
+      overflow-y: auto;
+      padding: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 14px;
+    }
+
+    .chat-bubble {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      max-width: 86%;
+      line-height: 1.5;
+    }
+
+    .chat-bubble.user {
+      align-self: flex-end;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: #e4e4e7;
+    }
+
+    .chat-bubble.assistant {
+      align-self: flex-start;
+      background: rgba(67, 56, 202, 0.14);
+      border: 1px solid rgba(67, 56, 202, 0.35);
+      color: #c7d2fe;
+    }
+
+    .chat-bubble.crisis {
+      align-self: flex-start;
+      background: #271c19;
+      border: 1px solid #78350f;
+      color: #fde68a;
+    }
+
+    /* Shutdown cards list */
+    .card-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 12px;
+    }
+
+    .card-item h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-item p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Architecture grid */
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    .arch-col {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .arch-col h4 {
+      font-size: 0.96rem;
+      margin-bottom: 8px;
+      color: #e0e7ff;
+    }
+
+    .arch-col p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--border);
+      color: var(--text-muted);
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 0;
+      margin-top: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-top">
+      <div>
+        <h1 class="brand-title">Neurosolit</h1>
+        <p class="brand-sub">Low-demand, solitude-affirming conversational tools for neurodivergent recovery</p>
+      </div>
+      <div class="header-controls">
+        <button id="dimmer-btn" class="pill-btn" title="Toggle low-luminance nocturnal mode">🌙 Dimmer</button>
+        <a href="https://huggingface.co/Scadiva" target="_blank" rel="noreferrer" class="pill-btn">
+          <span class="status-dot"></span> HF Spaces Live
+        </a>
+        <a href="https://github.com/Asterioxer/Neurosolit-salt" target="_blank" rel="noreferrer" class="pill-btn">
+          GitHub Repo
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="crisis-box" class="crisis-banner">
+      <h3>Support Information</h3>
+      <p id="crisis-text"></p>
+    </div>
+
+    <div class="prototype-banner">
+      <strong>Clinical Prototype Notice:</strong> Unvalidated research tool, not a therapist replacement.
+      Built for schizoid personality structure, PDA autism, and autistic burnout. Text indicating acute danger or
+      self-harm is never answered by models; support resources are shown instead.
+    </div>
+
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-tab="arch2">Declarative-Ally (Demand De-Escalator)</button>
+      <button class="tab-btn" data-tab="arch3">NeuroACT-Solitude (Companion)</button>
+      <button class="tab-btn" data-tab="arch1">Liminal-Space (Local WebGPU)</button>
+      <button class="tab-btn" data-tab="cards">Shutdown Boundary Cards</button>
+      <button class="tab-btn" data-tab="arch">Architecture & Framework</button>
+    </nav>
+
+    <!-- TAB 1: DECLARATIVE-ALLY (ARCH 2) -->
+    <section id="tab-arch2" class="tab-pane active">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">BERMED Demand De-Escalator</div>
+            <div class="panel-desc">Rewrites high-pressure emails or demands into zero-demand declarative observations</div>
+          </div>
+          <span class="badge">ZeroGPU Cloud</span>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label>Sample Prompts:</label>
+          <div class="btn-row" style="margin: 4px 0 12px 0;">
+            <button class="sample-pill" data-target="demand-in" data-text="You must attend the team social event tonight and tell everyone about your progress! Why are you always avoiding these meetings?">Social All-Hands</button>
+            <button class="sample-pill" data-target="demand-in" data-text="You have to finish this report by 5 PM, submit your taxes, and call the clinic right away!">Overwhelming Checklist</button>
+            <button class="sample-pill" data-target="demand-in" data-text="Can you please review this entire document immediately and send me all your feedback?">Urgent Review</button>
+          </div>
+        </div>
+
+        <label for="demand-in">Incoming High-Demand Text:</label>
+        <textarea id="demand-in" rows="4" placeholder="Paste high-demand email, instruction, or internal checklist..."></textarea>
+
+        <div style="margin: 14px 0;">
+          <label>Nervous System Bandwidth Mode:</label>
+          <div style="display: flex; gap: 16px; margin-top: 6px;">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="radio" name="bandwidth-mode" value="Standard Low-Demand" checked /> Standard Low-Demand
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="radio" name="bandwidth-mode" value="Acute Overload (2 Sentences Max)" /> Acute Overload (2 Sentences Max)
+            </label>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button id="convert-demand-btn" class="btn btn-primary">Neutralize into Declarative Observation</button>
+        </div>
+
+        <div class="output-header">
+          <span>Zero-Demand Declarative Output</span>
+          <button id="copy-demand-out" class="btn btn-small">Copy</button>
+        </div>
+        <div id="demand-out" class="output-box">Environment is quiet. Zero demands active.</div>
+      </div>
+    </section>
+
+    <!-- TAB 2: NEUROACT-SOLITUDE (ARCH 3) -->
+    <section id="tab-arch3" class="tab-pane">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">NeuroACT-Solitude: Controlled-Distance Companion</div>
+            <div class="panel-desc">Affirms solitude, silence, and recovery anchored in deep solitary interests</div>
+          </div>
+          <span class="badge">Fine-Tuned 1.5B</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div>
+            <label for="rel-mode">Framing Mode:</label>
+            <select id="rel-mode">
+              <option value="Intellectual / Project Container (Schizoid-Safe)">Intellectual / Project Container (Schizoid-Safe)</option>
+              <option value="NeuroACT Defusion & Sensory Pacing">NeuroACT Defusion & Sensory Pacing</option>
+            </select>
+          </div>
+          <div>
+            <label for="anchor-interest">Focused Solitary Interest Anchor:</label>
+            <input type="text" id="anchor-interest" value="Systems Architecture & Solitary Research" />
+          </div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label>Sample Messages:</label>
+          <div class="btn-row" style="margin: 4px 0 8px 0;">
+            <button class="sample-pill" data-target="chat-in" data-text="Been in my room for three days working on my code. Society feels loud and impossible.">Three Days in Room</button>
+            <button class="sample-pill" data-target="chat-in" data-text="Words gone. Too loud earlier. Everyone finally left the house.">Verbal Exhaustion</button>
+            <button class="sample-pill" data-target="chat-in" data-text="Someone invited me to an event and I don't know how to say no.">Declining Invitation</button>
+          </div>
+        </div>
+
+        <div id="chat-box" class="chat-container">
+          <div class="chat-bubble assistant">
+            This space remains quiet and unhurried. Nothing shared here creates any obligation or expectation of a reply.
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="chat-in" placeholder="Type a message at your own pace..." />
+          <button id="chat-send-btn" class="btn btn-primary">Send</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: LIMINAL-SPACE (ARCH 1) -->
+    <section id="tab-arch1" class="tab-pane">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Liminal-Space: Client-Side WebGPU Sanctuary</div>
+            <div class="panel-desc">Runs entirely on this device via WebGPU / WASM. Zero text ever touches a server.</div>
+          </div>
+          <span id="worker-badge" class="badge">Model Idle (Local)</span>
+        </div>
+
+        <div class="btn-row">
+          <select id="local-mode" style="width: auto;">
+            <option value="analytical">Mode: Objective Analytical Mirror</option>
+            <option value="declarative">Mode: Low-Demand Declarative Observation</option>
+          </select>
+          <button id="load-model-btn" class="btn">Load / cache model locally (~300MB)</button>
+          <button id="purge-local-btn" class="btn btn-danger" style="margin-left: auto;">Instant Memory Purge</button>
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <button id="sample-local-btn" class="sample-pill">Insert sample reflection</button>
+        </div>
+
+        <textarea id="local-in" rows="5" placeholder="Write in privacy. Leave it unsent, or request an objective mirror below..."></textarea>
+
+        <div class="btn-row">
+          <button id="reflect-local-btn" class="btn btn-primary">Request Objective Mirror (Local)</button>
+        </div>
+
+        <div class="output-header">
+          <span>Local Device Output</span>
+          <button id="copy-local-out" class="btn btn-small">Copy</button>
+        </div>
+        <div id="local-out" class="output-box">Silence is active. No observation requested.</div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SHUTDOWN PROXY CARDS -->
+    <section id="tab-cards" class="tab-pane">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Nonverbal Shutdown Proxy Cards</div>
+            <div class="panel-desc">Zero-compute, pre-written scripts for acute shutdown, motor freeze, or post-social recovery</div>
+          </div>
+        </div>
+
+        <div class="card-item">
+          <h4>
+            <span>Request Sequential Departure (Need Solitude)</span>
+            <button class="btn btn-small copy-script" data-card="card-1">Copy</button>
+          </h4>
+          <p id="card-1">Sensory and spoken language processing are currently depleted. Nothing is wrong, and no questions or assistance are needed. Allowing the room to empty out into quiet solitude is the safest way to help recovery right now.</p>
+        </div>
+
+        <div class="card-item">
+          <h4>
+            <span>Autistic Inertia Freeze (Stay Put)</span>
+            <button class="btn btn-small copy-script" data-card="card-2">Copy</button>
+          </h4>
+          <p id="card-2">Experiencing autistic inertia and motor freeze right now. Please avoid prompting movement, eye contact, or verbal replies. Remaining stationary in quiet will allow the nervous system to reset naturally.</p>
+        </div>
+
+        <div class="card-item">
+          <h4>
+            <span>Post-Social Decompression Mode</span>
+            <button class="btn btn-small copy-script" data-card="card-3">Copy</button>
+          </h4>
+          <p id="card-3">Entering low-demand solitary decompression mode for the rest of the day. Messages and expectations are paused until bandwidth returns.</p>
+        </div>
+
+        <div class="card-item">
+          <h4>
+            <span>Asynchronous / Workplace Low-Bandwidth Status</span>
+            <button class="btn btn-small copy-script" data-card="card-4">Copy</button>
+          </h4>
+          <p id="card-4">Currently operating in asynchronous, low-bandwidth mode to manage cognitive overload. Urgent direct calls or rapid replies are paused. Written notes will be processed as energy permits, with zero expectation of immediate response.</p>
+        </div>
+
+        <div class="card-item">
+          <h4>
+            <span>Sensory / Auditory Overload Space Request</span>
+            <button class="btn btn-small copy-script" data-card="card-5">Copy</button>
+          </h4>
+          <p id="card-5">Auditory processing is currently overwhelmed. Spoken requests cannot be parsed safely. Please allow quiet physical space and reduce ambient noise. No reply is expected.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: ARCHITECTURE & CLINICAL FRAMEWORK -->
+    <section id="tab-arch" class="tab-pane">
+      <div class="panel-card">
+        <div class="panel-title">Clinical Rationale & Threat Models</div>
+        <p class="panel-desc">Why three architectures instead of one general-purpose chatbot</p>
+
+        <div class="arch-grid">
+          <div class="arch-col">
+            <h4>1. Schizoid / SZPD Profile</h4>
+            <p><strong>Threat:</strong> Disclosure & Engulfment Anxiety. Data leaving the device at all triggers vulnerability panic.</p>
+            <p><strong>Solution:</strong> Architecture 1 (Liminal-Space) runs 100% in-browser on client WebGPU/WASM with zero server round-trip.</p>
+            <span class="badge">Offline WebGPU</span>
+          </div>
+
+          <div class="arch-col">
+            <h4>2. PDA Autism Profile</h4>
+            <p><strong>Threat:</strong> Perceived Demand. Imperative commands, questions, and unsolicited wellness advice trigger nervous system fight/freeze.</p>
+            <p><strong>Solution:</strong> Architecture 2 (Declarative-Ally) uses Linda K. Murphy's BERMED declarative language to strip demands.</p>
+            <span class="badge">ZeroGPU A10G</span>
+          </div>
+
+          <div class="arch-col">
+            <h4>3. Chronic Withdrawal Profile</h4>
+            <p><strong>Threat:</strong> Social Fatigue & Unpredictability. Fear of being trapped in conversational spirals.</p>
+            <p><strong>Solution:</strong> Architecture 3 (NeuroACT) grounds pacing in focused special interests, with verbal shutdown circuit breakers.</p>
+            <span class="badge">BGE-Small RAG</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
+          <h4 style="font-size: 0.95rem; margin-bottom: 8px;">Clinical Foundations:</h4>
+          <ul style="font-size: 0.84rem; color: var(--text-muted); padding-left: 20px; line-height: 1.6;">
+            <li><strong>Linda K. Murphy:</strong> BERMED Declarative Language Handbook (removing demands and interrogatives).</li>
+            <li><strong>Richard G. Erskine:</strong> Attunement to Silence & Schizoid Process (safeguarding autonomy and emotional perimeter).</li>
+            <li><strong>Johan Pahnke:</strong> NeuroACT (Acceptance and Commitment Therapy adapted for neurodivergent populations).</li>
+            <li><strong>Dora Raymaker & Christina Nicolaidis:</strong> Characterizing Autistic Burnout and Inertia.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>Neurosolit Research Prototype • Free & Open Source</div>
+    <div style="display:flex; gap:14px;">
+      <a href="https://huggingface.co/Scadiva/declarative-ally" target="_blank" rel="noreferrer">HF Spaces</a>
+      <a href="https://huggingface.co/Scadiva/nd-solitude-qwen-1.5b-merged" target="_blank" rel="noreferrer">Model Weights</a>
+      <a href="https://github.com/Asterioxer/Neurosolit-salt" target="_blank" rel="noreferrer">GitHub Source</a>
+    </div>
+  </footer>
+
+  <script type="module">
+    import { assessRisk, CRISIS_MESSAGE, WATCH_NOTE } from "./crisis.js";
+
+    // -------------------------------------------------------------
+    // Dimmer & Theme
+    // -------------------------------------------------------------
+    const dimmerBtn = document.getElementById("dimmer-btn");
+    dimmerBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dimmed");
+      const isDim = document.body.classList.contains("dimmed");
+      dimmerBtn.textContent = isDim ? "☀️ Ambient" : "🌙 Dimmer";
+    });
+
+    // -------------------------------------------------------------
+    // Tab Switching
+    // -------------------------------------------------------------
+    const tabs = document.querySelectorAll(".tab-btn");
+    const panes = document.querySelectorAll(".tab-pane");
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        tabs.forEach((t) => t.classList.remove("active"));
+        panes.forEach((p) => p.classList.remove("active"));
+        tab.classList.add("active");
+        const target = document.getElementById("tab-" + tab.dataset.tab);
+        if (target) target.classList.add("active");
+      });
+    });
+
+    // -------------------------------------------------------------
+    // Sample Prompt Buttons
+    // -------------------------------------------------------------
+    document.querySelectorAll(".sample-pill").forEach((pill) => {
+      pill.addEventListener("click", () => {
+        const targetId = pill.dataset.target;
+        const text = pill.dataset.text;
+        if (targetId && text) {
+          const el = document.getElementById(targetId);
+          if (el) el.value = text;
+        }
+      });
+    });
+
+    // -------------------------------------------------------------
+    // Copy Utilities
+    // -------------------------------------------------------------
+    function handleCopy(button, textToCopy) {
+      if (!textToCopy) return;
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        const orig = button.textContent;
+        button.textContent = "Copied!";
+        setTimeout(() => { button.textContent = orig; }, 1400);
+      });
+    }
+
+    document.getElementById("copy-demand-out").addEventListener("click", (e) => {
+      handleCopy(e.target, document.getElementById("demand-out").textContent);
+    });
+
+    document.getElementById("copy-local-out").addEventListener("click", (e) => {
+      handleCopy(e.target, document.getElementById("local-out").textContent);
+    });
+
+    document.querySelectorAll(".copy-script").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cardId = btn.dataset.card;
+        const p = document.getElementById(cardId);
+        if (p) handleCopy(btn, p.textContent);
+      });
+    });
+
+    // -------------------------------------------------------------
+    // Crisis Safety Gate Check
+    // -------------------------------------------------------------
+    const crisisBox = document.getElementById("crisis-box");
+    const crisisText = document.getElementById("crisis-text");
+
+    function checkCrisis(input) {
+      const risk = assessRisk(input);
+      if (risk === "crisis") {
+        crisisText.textContent = CRISIS_MESSAGE;
+        crisisBox.style.display = "block";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return true;
+      }
+      return false;
+    }
+
+    // -------------------------------------------------------------
+    // Tab 1: Declarative-Ally API Integration
+    // -------------------------------------------------------------
+    const demandIn = document.getElementById("demand-in");
+    const demandOut = document.getElementById("demand-out");
+    const convertDemandBtn = document.getElementById("convert-demand-btn");
+
+    convertDemandBtn.addEventListener("click", async () => {
+      const text = demandIn.value.trim();
+      if (!text) return;
+      if (checkCrisis(text)) return;
+
+      const mode = document.querySelector('input[name="bandwidth-mode"]:checked').value;
+      demandOut.textContent = "Neutralizing demands via ZeroGPU cloud...";
+      convertDemandBtn.disabled = true;
+
+      try {
+        const res = await fetch("https://scadiva-declarative-ally.hf.space/call/neutralize_demands", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: [text, mode] }),
+        });
+        const { event_id } = await res.json();
+        const eventSource = new EventSource(`https://scadiva-declarative-ally.hf.space/call/neutralize_demands/${event_id}`);
+        eventSource.onmessage = (event) => {
+          try {
+            const parsed = JSON.parse(event.data);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              demandOut.textContent = parsed[0];
+              eventSource.close();
+              convertDemandBtn.disabled = false;
+            }
+          } catch (_) {}
+        };
+        eventSource.onerror = () => {
+          eventSource.close();
+          convertDemandBtn.disabled = false;
+        };
+      } catch (err) {
+        demandOut.textContent = `Error connecting to Space: ${err.message}. Direct fallback link: https://huggingface.co/spaces/Scadiva/declarative-ally`;
+        convertDemandBtn.disabled = false;
+      }
+    });
+
+    // -------------------------------------------------------------
+    // Tab 2: NeuroACT-Solitude API Integration
+    // -------------------------------------------------------------
+    const chatBox = document.getElementById("chat-box");
+    const chatIn = document.getElementById("chat-in");
+    const chatSendBtn = document.getElementById("chat-send-btn");
+    const relMode = document.getElementById("rel-mode");
+    const anchorInterest = document.getElementById("anchor-interest");
+
+    function appendBubble(content, role) {
+      const b = document.createElement("div");
+      b.className = `chat-bubble ${role}`;
+      b.textContent = content;
+      chatBox.appendChild(b);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function sendChatMessage() {
+      const msg = chatIn.value.trim();
+      if (!msg) return;
+      chatIn.value = "";
+      appendBubble(msg, "user");
+
+      if (checkCrisis(msg)) {
+        appendBubble(CRISIS_MESSAGE, "crisis");
+        return;
+      }
+
+      chatSendBtn.disabled = true;
+      const loadingBubble = document.createElement("div");
+      loadingBubble.className = "chat-bubble assistant";
+      loadingBubble.textContent = "Reflecting in quiet...";
+      chatBox.appendChild(loadingBubble);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      try {
+        const res = await fetch("https://scadiva-neuroact-solitude.hf.space/call/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: [msg, relMode.value, anchorInterest.value] }),
+        });
+        const { event_id } = await res.json();
+        const eventSource = new EventSource(`https://scadiva-neuroact-solitude.hf.space/call/chat/${event_id}`);
+        eventSource.onmessage = (event) => {
+          try {
+            const parsed = JSON.parse(event.data);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              loadingBubble.textContent = parsed[0];
+              eventSource.close();
+              chatSendBtn.disabled = false;
+            }
+          } catch (_) {}
+        };
+        eventSource.onerror = () => {
+          eventSource.close();
+          chatSendBtn.disabled = false;
+        };
+      } catch (err) {
+        loadingBubble.textContent = `Connection paused: ${err.message}. Live space: https://huggingface.co/spaces/Scadiva/neuroact-solitude`;
+        chatSendBtn.disabled = false;
+      }
+    }
+
+    chatSendBtn.addEventListener("click", sendChatMessage);
+    chatIn.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendChatMessage();
+    });
+
+    // -------------------------------------------------------------
+    // Tab 3: Liminal-Space (Local WebGPU Worker)
+    // -------------------------------------------------------------
+    let worker = new Worker("./worker.js", { type: "module" });
+    const workerBadge = document.getElementById("worker-badge");
+    const localIn = document.getElementById("local-in");
+    const localOut = document.getElementById("local-out");
+    const localMode = document.getElementById("local-mode");
+
+    function bindWorker(w) {
+      w.addEventListener("message", (e) => {
+        const { status, text, info, message, device } = e.data;
+        if (status === "progress") {
+          const pct = info && info.progress ? Math.round(info.progress) : "";
+          workerBadge.textContent = `Caching local weights... ${pct}%`;
+        } else if (status === "ready") {
+          workerBadge.textContent = `Ready (${device})`;
+        } else if (status === "stream") {
+          localOut.textContent = text;
+        } else if (status === "crisis") {
+          localOut.textContent = text;
+          workerBadge.textContent = "Support info displayed";
+        } else if (status === "done") {
+          workerBadge.textContent = "Complete (Local)";
+        } else if (status === "error") {
+          workerBadge.textContent = `Error: ${message}`;
+        }
+      });
+    }
+    bindWorker(worker);
+
+    document.getElementById("load-model-btn").addEventListener("click", () => {
+      workerBadge.textContent = "Loading local engine...";
+      worker.postMessage({ type: "INIT" });
+    });
+
+    document.getElementById("sample-local-btn").addEventListener("click", () => {
+      localIn.value = "Three in the morning. House is finally silent. Deep in solitary research for six hours. The outside world carries too much sensory friction today.";
+    });
+
+    document.getElementById("reflect-local-btn").addEventListener("click", () => {
+      const text = localIn.value.trim();
+      if (!text) return;
+      if (checkCrisis(text)) return;
+      localOut.textContent = "";
+      workerBadge.textContent = "Reflecting locally...";
+      worker.postMessage({ type: "REFLECT", text, mode: localMode.value });
+    });
+
+    document.getElementById("purge-local-btn").addEventListener("click", () => {
+      worker.terminate();
+      localIn.value = "";
+      localOut.textContent = "State purged. Memory buffer reset to zero.";
+      workerBadge.textContent = "Purged";
+      worker = new Worker("./worker.js", { type: "module" });
+      bindWorker(worker);
+    });
+  </script>
+</body>
+</html>

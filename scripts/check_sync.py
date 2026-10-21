@@ -34,11 +34,14 @@ def main() -> int:
     if PY2.read_bytes() != PY3.read_bytes():
         print("DRIFT: arch2 and arch3 safety.py differ")
         ok = False
-    js_src = JS.read_text(encoding="utf-8")
-    for name in ("CRISIS_PATTERNS", "WATCH_PATTERNS"):
-        if js_list(js_src, name) != py_list(PY2, name):
-            print(f"DRIFT: {name} differs between crisis.js and safety.py")
-            ok = False
+    for js_path, label in [(JS, "arch1 crisis.js"), (ROOT / "docs" / "crisis.js", "docs crisis.js")]:
+        if not js_path.exists():
+            continue
+        js_src = js_path.read_text(encoding="utf-8")
+        for name in ("CRISIS_PATTERNS", "WATCH_PATTERNS"):
+            if js_list(js_src, name) != py_list(PY2, name):
+                print(f"DRIFT: {name} differs between {label} and safety.py")
+                ok = False
     print("safety layer in sync" if ok else "FIX THE DRIFT BEFORE DEPLOYING")
     return 0 if ok else 1
 

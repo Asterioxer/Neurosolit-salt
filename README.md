@@ -4,7 +4,11 @@ Low-demand, solitude-affirming conversational tools for neurodivergent people (s
 personality structure, PDA autism, autistic shutdown/burnout, hikikomori-adjacent withdrawal),
 built to deploy on free Hugging Face tiers.
 
-## Live Spaces
+## Live Deployments
+
+🌐 **Interactive Web Hub (GitHub Pages):** [https://asterioxer.github.io/Neurosolit-salt/](https://asterioxer.github.io/Neurosolit-salt/)
+
+### Hugging Face Spaces & Models
 
 | App | Live URL | Compute & Hardware |
 |---|---|---|
