@@ -200,9 +200,21 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         type="messages",
         additional_inputs=[rel_mode, interest_input],
         examples=[
-            "Been in my room for three days working on my code. Society feels loud and impossible.",
-            "Someone invited me to an event and I don't know how to step back without feeling guilty.",
-            "Words gone. Too loud earlier. Everyone finally left the house.",
+            [
+                "Been in my room for three days working on my code. Society feels loud and impossible.",
+                "Intellectual / Project Container (Schizoid-Safe)",
+                "Systems Architecture & Solitary Research",
+            ],
+            [
+                "Someone invited me to an event and I don't know how to step back without feeling guilty.",
+                "NeuroACT Defusion & Sensory Pacing",
+                "Systems Architecture & Solitary Research",
+            ],
+            [
+                "Words gone. Too loud earlier. Everyone finally left the house.",
+                "Intellectual / Project Container (Schizoid-Safe)",
+                "Systems Architecture & Solitary Research",
+            ],
         ],
         api_name="chat",
     )
