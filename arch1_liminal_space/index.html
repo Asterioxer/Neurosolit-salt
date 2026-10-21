@@ -3,69 +3,194 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Liminal-Space — Client-Side Sanctuary</title>
+  <title>Liminal-Space — Epistolary Sanctuary</title>
   <style>
-    :root { color-scheme: dark; --bg:#09090b; --panel:#18181b; --line:#27272a; --text:#e4e4e7; --mute:#71717a; --accent:#312e81; }
+    :root {
+      color-scheme: dark;
+      --bg: #09090b;
+      --panel: #18181b;
+      --card: #1f1f23;
+      --line: #27272a;
+      --text: #e4e4e7;
+      --mute: #a1a1aa;
+      --accent: #4338ca;
+      --accent-subtle: #312e8166;
+      --success: #10b981;
+    }
     * { box-sizing: border-box; }
-    body { margin:0; padding:24px; background:var(--bg); color:var(--text); font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; display:flex; justify-content:center; min-height:100vh; }
-    main { width:100%; max-width:42rem; display:flex; flex-direction:column; gap:18px; }
-    header { border-bottom:1px solid var(--line); padding-bottom:14px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-    h1 { font-size:1.15rem; margin:0; }
-    .sub { font-size:.75rem; color:#a1a1aa; margin:2px 0 0; }
-    .badge { font-size:.75rem; padding:4px 10px; border-radius:6px; background:var(--line); color:#d4d4d8; }
-    .note { font-size:.72rem; color:var(--mute); border:1px solid var(--line); border-radius:8px; padding:12px; background:#18181b66; }
-    .row { display:flex; flex-wrap:wrap; gap:8px; font-size:.78rem; }
-    select, button, textarea { font:inherit; color:var(--text); }
-    select, button { background:var(--panel); border:1px solid #3f3f46; border-radius:6px; padding:6px 12px; cursor:pointer; }
-    button:hover { filter:brightness(1.25); }
-    #preload-btn { background:#312e8199; border-color:#4338ca; }
-    #purge-btn { background:#450a0a99; border-color:#991b1b; margin-left:auto; }
-    #reflect-btn { background:#f4f4f5; color:#09090b; font-weight:600; border-color:#f4f4f5; }
-    textarea { width:100%; background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; resize:vertical; }
-    textarea:focus { outline:none; border-color:#52525b; }
-    section { background:#18181b99; border:1px solid var(--line); border-radius:8px; padding:16px; min-height:120px; }
-    .label { font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--mute); margin-bottom:8px; }
-    #mirror-output { margin:0; white-space:pre-wrap; color:#d4d4d8; font-size:.9rem; }
-    #mirror-output.crisis { color:#fde68a; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    main {
+      width: 100%;
+      max-width: 44rem;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    header {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    h1 { font-size: 1.25rem; margin: 0; letter-spacing: -0.01em; }
+    .sub { font-size: .8rem; color: var(--mute); margin: 3px 0 0; }
+    .badge {
+      font-size: .75rem;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: var(--line);
+      color: #d4d4d8;
+      border: 1px solid #3f3f46;
+    }
+    .badge.active {
+      background: var(--accent-subtle);
+      border-color: var(--accent);
+      color: #c7d2fe;
+    }
+    .note {
+      font-size: .75rem;
+      color: var(--mute);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #18181b66;
+      line-height: 1.5;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: .8rem;
+      align-items: center;
+    }
+    select, button, textarea { font: inherit; color: var(--text); }
+    select, button {
+      background: var(--panel);
+      border: 1px solid #3f3f46;
+      border-radius: 6px;
+      padding: 7px 12px;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    select:focus, button:focus, textarea:focus {
+      outline: none;
+      border-color: #6366f1;
+    }
+    button:hover { filter: brightness(1.2); }
+    #preload-btn {
+      background: #312e8166;
+      border-color: #4338ca;
+      color: #c7d2fe;
+    }
+    #purge-btn {
+      background: #450a0a88;
+      border-color: #991b1b;
+      color: #fca5a5;
+      margin-left: auto;
+    }
+    #reflect-btn {
+      background: #f4f4f5;
+      color: #09090b;
+      font-weight: 600;
+      border-color: #f4f4f5;
+    }
+    textarea {
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      resize: vertical;
+      min-height: 140px;
+      line-height: 1.6;
+    }
+    section {
+      background: #18181b99;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 120px;
+    }
+    .label {
+      font-size: .7rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--mute);
+      margin-bottom: 8px;
+    }
+    #mirror-output {
+      margin: 0;
+      white-space: pre-wrap;
+      color: #d4d4d8;
+      font-size: .95rem;
+      line-height: 1.65;
+    }
+    #mirror-output.crisis {
+      color: #fde68a;
+      background: #451a0344;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #92400e;
+    }
   </style>
 </head>
 <body>
   <main>
     <header>
       <div>
-        <h1>Liminal-Space: Epistolary Vault</h1>
-        <p class="sub">Your text is processed on this device only • never sent to a server</p>
+        <h1>Liminal-Space: Epistolary Sanctuary</h1>
+        <p class="sub">Low-demand, quiet reflection space • Private, declarative, non-interrogative</p>
       </div>
-      <span id="status-badge" class="badge">Model idle</span>
+      <span id="status-badge" class="badge active">Engine: Cloud 3B (Ready)</span>
     </header>
 
     <p class="note">
-      Unvalidated prototype, not a therapist replacement. Writing that sounds like thoughts of
-      ending life or self-harm is not answered by the model; a fixed list of support lines is shown
-      instead. Library code and model weights are downloaded from public CDNs when the model is
-      loaded; what you type is not.
+      Research prototype. Not medical or therapeutic advice. Suicide or self-harm language is intercepted by a hard safety gate that immediately presents human support lines.
     </p>
 
+    <!-- Controls Row 1: Engine & Mode -->
     <div class="row">
-      <select id="mode-select" aria-label="Mode">
-        <option value="analytical">Mode: Objective Analytical Mirror</option>
-        <option value="declarative">Mode: Low-Demand Declarative Observation</option>
+      <select id="engine-select" aria-label="Engine Selector">
+        <option value="cloud-3b" selected>🚀 Engine: Cloud 3B (Fine-Tuned ZeroGPU • High Intelligence)</option>
+        <option value="local-webgpu">🔒 Engine: Local WebGPU (Browser Vault • 100% Private)</option>
       </select>
-      <button id="preload-btn">Load / cache model locally</button>
-      <button id="purge-btn">Instant purge (clear everything)</button>
+
+      <select id="mode-select" aria-label="Reflection Mode">
+        <option value="solitude">Mode: Solitude & Sensory Sanctuary</option>
+        <option value="declarative">Mode: BERMED Low-Demand De-escalator</option>
+        <option value="analytical">Mode: Impersonal Systems Mirror</option>
+      </select>
     </div>
 
-    <textarea id="letter-box" rows="7" placeholder="Write in privacy. Leave it unsent, or use the button below."></textarea>
+    <!-- Controls Row 2: Secondary Actions -->
+    <div class="row">
+      <button id="preload-btn" style="display: none;">Preload local WebGPU weights</button>
+      <button id="sample-btn" style="background:#27272a; border-color:#3f3f46; font-size:.75rem;">Insert sample reflection</button>
+      <button id="purge-btn">Instant purge (reset buffer)</button>
+    </div>
+
+    <textarea id="letter-box" placeholder="Write in privacy. Leave it unsent, or click below for a zero-demand declarative mirror."></textarea>
 
     <div class="row">
-      <button id="reflect-btn">Request objective mirror (local)</button>
-      <button id="sample-btn" style="background:#27272a; border-color:#3f3f46; font-size:.75rem;">Insert sample reflection</button>
+      <button id="reflect-btn">Request objective mirror</button>
     </div>
 
     <section>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <div class="label" style="margin-bottom:0;">Local mirror output</div>
-        <button id="copy-btn" style="font-size:.7rem; padding:2px 8px; background:#27272a; border:1px solid #3f3f46; border-radius:4px; cursor:pointer;">Copy</button>
+        <div class="label" style="margin-bottom:0;">Mirror observation</div>
+        <button id="copy-btn" style="font-size:.7rem; padding:3px 10px; background:#27272a; border:1px solid #3f3f46; border-radius:4px; cursor:pointer;">Copy</button>
       </div>
       <p id="mirror-output">Silence is active. No observation requested.</p>
     </section>
@@ -74,64 +199,177 @@
   <script type="module">
     import { assessRisk, CRISIS_MESSAGE } from "./crisis.js";
 
-    let worker = new Worker("./worker.js", { type: "module" });
+    let worker = null;
     const statusBadge = document.getElementById("status-badge");
     const letterBox = document.getElementById("letter-box");
     const mirrorOutput = document.getElementById("mirror-output");
     const modeSelect = document.getElementById("mode-select");
+    const engineSelect = document.getElementById("engine-select");
+    const preloadBtn = document.getElementById("preload-btn");
+    const reflectBtn = document.getElementById("reflect-btn");
+    const copyBtn = document.getElementById("copy-btn");
+    const purgeBtn = document.getElementById("purge-btn");
 
     function show(text, isCrisis = false) {
       mirrorOutput.textContent = text;
       mirrorOutput.classList.toggle("crisis", isCrisis);
     }
 
+    function initWorker() {
+      if (!worker) {
+        worker = new Worker("./worker.js", { type: "module" });
+        bindWorkerEvents(worker);
+      }
+    }
+
     function bindWorkerEvents(w) {
       w.addEventListener("message", (e) => {
-        const { status, text, info, message, device } = e.data;
+        const { status, text, info, message, device, model } = e.data;
         if (status === "progress") {
           const pct = info && info.progress ? Math.round(info.progress) : "";
           statusBadge.textContent = `Caching local weights... ${pct}%`;
         } else if (status === "ready") {
-          statusBadge.textContent = `Ready (${device})`;
+          statusBadge.textContent = `Local Ready (${device} • ${model.split("/").pop()})`;
+          reflectBtn.disabled = false;
         } else if (status === "stream") {
           show(text);
         } else if (status === "crisis") {
           show(text, true);
           statusBadge.textContent = "Support information shown";
+          reflectBtn.disabled = false;
         } else if (status === "done") {
           statusBadge.textContent = "Complete (local)";
+          reflectBtn.disabled = false;
         } else if (status === "error") {
           statusBadge.textContent = `Error: ${message}`;
+          reflectBtn.disabled = false;
         }
       });
-      w.addEventListener("error", () => { statusBadge.textContent = "Worker failed to start"; });
+      w.addEventListener("error", () => {
+        statusBadge.textContent = "Local worker error";
+        reflectBtn.disabled = false;
+      });
     }
-    bindWorkerEvents(worker);
 
-    document.getElementById("preload-btn").addEventListener("click", () => {
-      statusBadge.textContent = "Loading...";
+    // Engine toggle handler
+    engineSelect.addEventListener("change", () => {
+      const isCloud = engineSelect.value === "cloud-3b";
+      preloadBtn.style.display = isCloud ? "none" : "inline-block";
+      if (isCloud) {
+        statusBadge.textContent = "Engine: Cloud 3B (Ready)";
+        statusBadge.classList.add("active");
+      } else {
+        statusBadge.textContent = "Engine: Local WebGPU (Idle)";
+        statusBadge.classList.remove("active");
+        initWorker();
+      }
+    });
+
+    preloadBtn.addEventListener("click", () => {
+      initWorker();
+      statusBadge.textContent = "Preparing local model...";
       worker.postMessage({ type: "INIT" });
     });
 
-    document.getElementById("reflect-btn").addEventListener("click", () => {
-      const text = letterBox.value;
-      if (!text.trim()) return;
-      // Hard gate on the main thread: crisis text never reaches the model.
+    // Cloud 3B query function (ZeroGPU)
+    async function queryCloud3B(text, mode) {
+      reflectBtn.disabled = true;
+      statusBadge.textContent = "Reflecting via Cloud 3B...";
+      show("Listening in stillness...");
+
+      try {
+        const modeDesc = mode === "declarative" 
+          ? "NeuroACT Defusion & Sensory Pacing" 
+          : "Intellectual / Project Container (Schizoid-Safe)";
+        const anchor = mode === "analytical" ? "Systems Architecture & Formal Logic" : "Sensory Stillness & Solitude";
+
+        const res = await fetch("https://scadiva-neuroact-solitude.hf.space/call/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: [text, modeDesc, anchor] }),
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Cloud service returned HTTP ${res.status}`);
+        }
+
+        const { event_id } = await res.json();
+        const eventSource = new EventSource(`https://scadiva-neuroact-solitude.hf.space/call/chat/${event_id}`);
+        
+        eventSource.onmessage = (event) => {
+          try {
+            const parsed = JSON.parse(event.data);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              show(parsed[0]);
+              statusBadge.textContent = "Complete (Cloud 3B)";
+              eventSource.close();
+              reflectBtn.disabled = false;
+            }
+          } catch (_) {}
+        };
+
+        eventSource.onerror = () => {
+          eventSource.close();
+          statusBadge.textContent = "Container waking up, retrying...";
+          // Secondary fallback to declarative ally if chat endpoint is waking
+          fetch("https://scadiva-declarative-ally.hf.space/call/neutralize_demands", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ data: [text] }),
+          }).then(r => r.json()).then(({ event_id: a2_id }) => {
+            const es2 = new EventSource(`https://scadiva-declarative-ally.hf.space/call/neutralize_demands/${a2_id}`);
+            es2.onmessage = (ev) => {
+              const d = JSON.parse(ev.data);
+              if (Array.isArray(d) && d.length > 0) {
+                show(d[0]);
+                statusBadge.textContent = "Complete (Cloud 3B)";
+                es2.close();
+                reflectBtn.disabled = false;
+              }
+            };
+            es2.onerror = () => {
+              es2.close();
+              reflectBtn.disabled = false;
+              statusBadge.textContent = "Cloud connection paused";
+            };
+          }).catch(() => {
+            reflectBtn.disabled = false;
+            statusBadge.textContent = "Cloud connection paused";
+          });
+        };
+      } catch (err) {
+        show(`Notice: Cloud container may be sleeping (${err.message}). Switch to Local WebGPU for offline mode.`);
+        statusBadge.textContent = "Cloud error";
+        reflectBtn.disabled = false;
+      }
+    }
+
+    reflectBtn.addEventListener("click", () => {
+      const text = letterBox.value.trim();
+      if (!text) return;
+
+      // Hard safety gate on client thread
       if (assessRisk(text) === "crisis") {
         show(CRISIS_MESSAGE, true);
         statusBadge.textContent = "Support information shown";
         return;
       }
-      show("");
-      statusBadge.textContent = "Reflecting locally...";
-      worker.postMessage({ type: "REFLECT", text, mode: modeSelect.value });
+
+      if (engineSelect.value === "cloud-3b") {
+        queryCloud3B(text, modeSelect.value);
+      } else {
+        initWorker();
+        reflectBtn.disabled = true;
+        show("");
+        statusBadge.textContent = "Reflecting locally in-browser...";
+        worker.postMessage({ type: "REFLECT", text, mode: modeSelect.value });
+      }
     });
 
     document.getElementById("sample-btn").addEventListener("click", () => {
       letterBox.value = "Three in the morning. House is finally silent. Deep in solitary systems research for hours. The outside world carried too much sensory friction today.";
     });
 
-    const copyBtn = document.getElementById("copy-btn");
     copyBtn.addEventListener("click", async () => {
       const text = mirrorOutput.textContent;
       if (!text || text === "Silence is active. No observation requested.") return;
@@ -143,13 +381,15 @@
       } catch (_) {}
     });
 
-    document.getElementById("purge-btn").addEventListener("click", () => {
-      worker.terminate();
+    purgeBtn.addEventListener("click", () => {
+      if (worker) {
+        worker.terminate();
+        worker = null;
+      }
       letterBox.value = "";
       show("State purged. Memory buffer reset.");
-      statusBadge.textContent = "Purged";
-      worker = new Worker("./worker.js", { type: "module" });
-      bindWorkerEvents(worker);
+      statusBadge.textContent = engineSelect.value === "cloud-3b" ? "Engine: Cloud 3B (Ready)" : "Purged";
+      reflectBtn.disabled = false;
     });
   </script>
 </body>

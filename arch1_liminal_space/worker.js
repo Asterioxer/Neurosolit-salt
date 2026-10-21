@@ -1,13 +1,24 @@
 import { pipeline, TextStreamer } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3";
 import { assessRisk, CRISIS_MESSAGE, WATCH_NOTE } from "./crisis.js";
 
-// Default: a small stock instruct model that transformers.js 3.3.3 supports,
-// so the Space works before any custom training. After running the pipeline
-// (training/export_onnx.py) set CUSTOM_MODEL_ID to your ONNX repo; deploy.py
-// can do this for you with --onnx-repo.
-const DEFAULT_MODEL_ID = "onnx-community/Qwen2.5-0.5B-Instruct";
+// Preferred local models: 1.5B provides far better instruction following than 0.5B.
+const PRIMARY_MODEL_ID = "onnx-community/Qwen2.5-1.5B-Instruct";
+const FALLBACK_MODEL_ID = "onnx-community/Qwen2.5-0.5B-Instruct";
 const CUSTOM_MODEL_ID = null; // e.g. "your-username/nd-solitude-qwen-onnx"
-const MODEL_ID = CUSTOM_MODEL_ID || DEFAULT_MODEL_ID;
+let ACTIVE_MODEL_ID = CUSTOM_MODEL_ID || PRIMARY_MODEL_ID;
+
+function enforceDeclarativeLock(rawText) {
+  if (!rawText) return "";
+  const sentences = rawText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [rawText];
+  const kept = [];
+  for (const s of sentences) {
+    const trimmed = s.trim();
+    if (trimmed.endsWith("?")) continue;
+    if (/^(why|how|what|when|where|who|could you|can you|would you|should you)\b/i.test(trimmed)) continue;
+    kept.push(trimmed);
+  }
+  return kept.join(" ");
+}
 
 class LocalSanctuaryEngine {
   static generator = null;
@@ -28,11 +39,26 @@ class LocalSanctuaryEngine {
   static async getGenerator(onProgress) {
     if (!this.generator) {
       this.device = await this.pickDevice();
-      this.generator = await pipeline("text-generation", MODEL_ID, {
-        device: this.device,
-        dtype: CUSTOM_MODEL_ID ? "q8" : this.device === "webgpu" ? "q4f16" : "q8",
-        progress_callback: onProgress,
-      });
+      try {
+        this.generator = await pipeline("text-generation", ACTIVE_MODEL_ID, {
+          device: this.device,
+          dtype: CUSTOM_MODEL_ID ? "q8" : this.device === "webgpu" ? "q4f16" : "q8",
+          progress_callback: onProgress,
+        });
+      } catch (err) {
+        // Fallback to smaller 0.5B model if 1.5B fails memory or network allocation
+        if (ACTIVE_MODEL_ID !== FALLBACK_MODEL_ID) {
+          console.warn(`Failed loading ${ACTIVE_MODEL_ID}, falling back to ${FALLBACK_MODEL_ID}:`, err);
+          ACTIVE_MODEL_ID = FALLBACK_MODEL_ID;
+          this.generator = await pipeline("text-generation", ACTIVE_MODEL_ID, {
+            device: this.device,
+            dtype: this.device === "webgpu" ? "q4f16" : "q8",
+            progress_callback: onProgress,
+          });
+        } else {
+          throw err;
+        }
+      }
     }
     return this.generator;
   }
@@ -47,6 +73,10 @@ const PROMPTS = {
   declarative:
     "The assistant uses strictly low-demand declarative statements ('It appears...', 'One pattern here is...'). " +
     "Ask zero questions and require zero reply. Validate the peace of solitude and staying put.",
+  solitude:
+    "The assistant reflects quietly on solitude, silence, and recovery. " +
+    "Never give advice, never ask questions, and never use commands. " +
+    "Offer gentle, grounded declarative observations about the stillness of the space.",
 };
 
 self.addEventListener("message", async (e) => {
@@ -57,7 +87,7 @@ self.addEventListener("message", async (e) => {
       await LocalSanctuaryEngine.getGenerator((info) => {
         self.postMessage({ status: "progress", info });
       });
-      self.postMessage({ status: "ready", device: LocalSanctuaryEngine.device, model: MODEL_ID });
+      self.postMessage({ status: "ready", device: LocalSanctuaryEngine.device, model: ACTIVE_MODEL_ID });
     } catch (err) {
       self.postMessage({ status: "error", message: err.message });
     }
@@ -65,7 +95,6 @@ self.addEventListener("message", async (e) => {
   }
 
   if (type === "REFLECT") {
-    // Second line of defense -- the page also gates before posting here.
     const risk = assessRisk(text);
     if (risk === "crisis") {
       self.postMessage({ status: "crisis", text: CRISIS_MESSAGE });
@@ -77,7 +106,7 @@ self.addEventListener("message", async (e) => {
         self.postMessage({ status: "progress", info });
       });
       const messages = [
-        { role: "system", content: PROMPTS[mode] || PROMPTS.analytical },
+        { role: "system", content: PROMPTS[mode] || PROMPTS.solitude },
         { role: "user", content: text },
       ];
 
@@ -87,21 +116,24 @@ self.addEventListener("message", async (e) => {
         skip_special_tokens: true,
         callback_function: (tok) => {
           buffer += tok;
-          // Syntax-level guardrail only -- not a content safety check.
-          self.postMessage({ status: "stream", text: buffer.replace(/\?/g, ".") });
+          const clean = enforceDeclarativeLock(buffer);
+          self.postMessage({ status: "stream", text: clean || buffer.replace(/\?/g, ".") });
         },
       });
 
       await gen(messages, {
-        max_new_tokens: 130,
+        max_new_tokens: 120,
         temperature: 0.35,
         do_sample: true,
         top_p: 0.9,
         streamer,
       });
 
+      const finalClean = enforceDeclarativeLock(buffer) || buffer.replace(/\?/g, ".");
       if (risk === "watch") {
-        self.postMessage({ status: "stream", text: buffer.replace(/\?/g, ".") + "\n\n" + WATCH_NOTE });
+        self.postMessage({ status: "stream", text: finalClean + "\n\n" + WATCH_NOTE });
+      } else {
+        self.postMessage({ status: "stream", text: finalClean });
       }
       self.postMessage({ status: "done" });
     } catch (err) {
