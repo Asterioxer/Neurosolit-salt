@@ -32,11 +32,23 @@ HERE = Path(__file__).parent
 USE_CUDA = bool(os.getenv("SPACES_ZERO_GPU")) or torch.cuda.is_available()
 MODEL_ID = os.getenv("NEURO_MODEL_ID") or "Qwen/Qwen2.5-1.5B-Instruct"
 
-tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-if USE_CUDA:
-    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float16).to("cuda")
-else:
-    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float32)
+try:
+    from peft import PeftConfig, PeftModel
+    peft_config = PeftConfig.from_pretrained(MODEL_ID)
+    base_id = peft_config.base_model_name_or_path
+    print(f"[neuroact] Loading base model {base_id} for adapter {MODEL_ID}...")
+    tokenizer = AutoTokenizer.from_pretrained(base_id)
+    if USE_CUDA:
+        base = AutoModelForCausalLM.from_pretrained(base_id, torch_dtype=torch.float16).to("cuda")
+    else:
+        base = AutoModelForCausalLM.from_pretrained(base_id, torch_dtype=torch.float32)
+    model = PeftModel.from_pretrained(base, MODEL_ID)
+except Exception:
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+    if USE_CUDA:
+        model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float16).to("cuda")
+    else:
+        model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float32)
 model.eval()
 print(f"[neuroact] model={MODEL_ID} cuda={USE_CUDA}")
 

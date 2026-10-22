@@ -31,12 +31,24 @@ DEFAULT_MODEL = "Qwen/Qwen2.5-3B-Instruct" if USE_CUDA else "Qwen/Qwen2.5-1.5B-I
 MODEL_ID = os.getenv("NEURO_MODEL_ID") or DEFAULT_MODEL
 DEVICE = "cuda" if USE_CUDA else "cpu"
 
-tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-if USE_CUDA:
-    # ZeroGPU rule 2: load at module scope, move to cuda eagerly.
-    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float16).to("cuda")
-else:
-    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float32)
+try:
+    from peft import PeftConfig, PeftModel
+    peft_config = PeftConfig.from_pretrained(MODEL_ID)
+    base_id = peft_config.base_model_name_or_path
+    print(f"[declarative-ally] Loading base model {base_id} for adapter {MODEL_ID}...")
+    tokenizer = AutoTokenizer.from_pretrained(base_id)
+    if USE_CUDA:
+        base = AutoModelForCausalLM.from_pretrained(base_id, torch_dtype=torch.float16).to("cuda")
+    else:
+        base = AutoModelForCausalLM.from_pretrained(base_id, torch_dtype=torch.float32)
+    model = PeftModel.from_pretrained(base, MODEL_ID)
+except Exception:
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+    if USE_CUDA:
+        # ZeroGPU rule 2: load at module scope, move to cuda eagerly.
+        model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float16).to("cuda")
+    else:
+        model = AutoModelForCausalLM.from_pretrained(MODEL_ID, torch_dtype=torch.float32)
 model.eval()
 print(f"[declarative-ally] model={MODEL_ID} device={DEVICE}")
 
