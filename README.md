@@ -16,8 +16,9 @@ built to deploy on free Hugging Face tiers.
 | `arch2_declarative_ally` | [Scadiva/declarative-ally](https://huggingface.co/spaces/Scadiva/declarative-ally) | ZeroGPU (A10G) / CPU Fallback |
 | `arch3_neuroact_solitude` | [Scadiva/neuroact-solitude](https://huggingface.co/spaces/Scadiva/neuroact-solitude) | ZeroGPU (A10G) / CPU Fallback |
 
-Fine-tuned merged weights:
-- **3B Model (Current ZeroGPU Active):** [`Scadiva/nd-solitude-3b-merged`](https://huggingface.co/Scadiva/nd-solitude-3b-merged) (Qwen2.5-3B Instruct + QLoRA low-demand declarative fine-tuning)
+Fine-tuned weights:
+- **7B Model (Current ZeroGPU Active • High Intelligence):** [`Scadiva/nd-solitude-7b-adapter`](https://huggingface.co/Scadiva/nd-solitude-7b-adapter) (Qwen2.5-7B Instruct + QLoRA low-demand declarative fine-tuning on 142 curated pairs)
+- **3B Model (Balanced Fallback):** [`Scadiva/nd-solitude-3b-merged`](https://huggingface.co/Scadiva/nd-solitude-3b-merged) (Qwen2.5-3B Instruct SFT)
 - **1.5B Model (Lightweight Fallback):** [`Scadiva/nd-solitude-qwen-1.5b-merged`](https://huggingface.co/Scadiva/nd-solitude-qwen-1.5b-merged) (Qwen2.5-1.5B Instruct + DPO)
 
 ### Interactive Terminal Testing
